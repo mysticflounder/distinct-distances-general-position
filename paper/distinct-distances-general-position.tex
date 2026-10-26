@@ -1,0 +1,773 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\hypersetup{hypertexnames=false}
+\usepackage{microtype}
+\usepackage{booktabs}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\cA}{\mathcal{A}}
+\newcommand{\cR}{\mathcal{R}}
+\newcommand{\cX}{\mathcal{X}}
+\newcommand{\cD}{\mathcal{D}}
+\newcommand{\dd}{\mathfrak{d}}
+\newcommand{\qq}{\mathfrak{q}}
+\newcommand{\sbar}{\bar{s}}
+\newcommand{\ybar}{\bar{y}}
+\newcommand{\bis}{\operatorname{bis}}
+\newcommand{\cl}{\operatorname{cl}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+
+\title{Distinct distances in general position:\\
+       an explicit improvement of the bound $n/3$}
+\author{Adam McKenna\thanks{\href{mailto:adam-apple@flounder.net}{adam-apple@flounder.net}}}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A planar point set is in general position if no three of its points are
+collinear and no four are concyclic. For such a set of $n$ points, every
+circle centred at a point of the set holds at most three other points, so
+the set determines at least $(n-1)/3$ distinct distances. I prove that every
+such set with $n \ge 10^4$ determines more than $(1/3 + 1/40)\,n$ distinct
+distances. The proof normalizes the set into a thin annulus, derives a
+family of linear inequalities for the distribution of pairwise distances,
+and closes with an exact rational Farkas certificate over $60$ cases. One
+of the inequalities comes from a lemma on the pairs of points that lie
+on a common perpendicular bisector. The certificate has been checked by an
+independent exact verifier, and the complete proof, the certificate
+included, has been checked by the Lean~4 kernel.
+\end{abstract}
+
+\section{Introduction}
+
+For a finite set $P \subset \R^2$ let $D(P)$ be the number of distinct
+distances $|pq|$, $p \ne q \in P$. We say that $P$ is \emph{in general
+position} if no three points of $P$ are collinear and no four points of $P$
+are concyclic. Erd\H{o}s asked whether every $n$-point set in general
+position determines a number of distinct distances that grows faster than
+linearly in $n$ \cite[question~(9)]{E75}; this is Problem~98 on the
+Erd\H{o}s problems website \cite{EPweb}, where it is listed as open.
+
+If no four points of $P$ are concyclic, then every circle centred at a point
+$p \in P$ contains at most three points of $P$. The $n-1$ other points of
+$P$ lie on the circles centred at $p$ whose radii are the distances in $P$,
+so $3D(P) \ge n-1$. Brass, Moser and Pach record this bound and state that
+no improvement of the form $(1/3+\eps)n$ is known, both for sets with no
+four points on a circle and for sets in general position
+\cite[\S5.5]{BMP05}. For sets with no three points collinear, Erd\H{o}s
+reports an argument of Szemer\'edi that gives a point with more than
+$\lfloor n/3\rfloor$ distances from it \cite{E75}. I am not aware of a
+bound of the form $(1/3+\eps)n$ for sets in general position. Brass, Moser and Pach
+list the upper bound $n e^{O(\sqrt{\log n})}$ for such sets, due to Erd\H{o}s,
+F\"uredi, Pach and Ruzsa \cite{EFPR93}. Without the general position
+hypothesis the minimum lies between $cn/\log n$, by the theorem of Guth and
+Katz \cite{GK}, and $Cn/\sqrt{\log n}$, attained by the square lattice.
+
+The target of this paper is the following statement.
+
+\begin{theorem}\label{thm:main}
+Let $P \subset \R^2$ be a set of $n \ge 10^4$ points, no three collinear and
+no four concyclic. Then
+\[
+  D(P) \;>\; \Bigl(\frac13 + \frac1{40}\Bigr)\, n .
+\]
+\end{theorem}
+
+The proof is by contradiction: it assumes a set of
+$n \ge 10^4$ points in general position with $D(P) \le (1/3+1/40)n$ and
+derives a contradiction. The constant $1/40$ and the threshold $10^4$ are
+explicit, and both come from the certificate of Section~\ref{sec:cert}.
+
+\paragraph{Method.} The proof has four parts.
+\begin{enumerate}
+\item A counting identity (Lemma~\ref{lem:apex}) relates the deficit
+  $Q = 3D - n + 1$ to the number of pairs $\{a,b\}$ whose perpendicular
+  bisector contains fewer than two points of $P$.
+\item A normalization (Section~\ref{sec:annulus}): after a translation and a
+  scaling, if $D \le (1/3+\delta)n$ then every point of $P$ lies in the
+  annulus $1 - 12\delta - 4/n \le |p|^2 \le 1$. The width of this annulus
+  is controlled by $Q$.
+\item Linear inequalities for the distance profile (Sections
+  \ref{sec:profile}--\ref{sec:J}): chord bounds for three points on a
+  circle inside the annulus, pair counts, a second-moment identity, a cap
+  bound, apex bands, and a lemma (Lemma~\ref{lem:J}) on the map that
+  sends a pair to the pair of points on its perpendicular bisector.
+\item A linear program on a grid of $1283$ radii, split into $60$ cases by
+  the mean $\ybar$ of $|p|^2 - \sbar^2$, with an exact rational Farkas certificate for
+  each case (Section~\ref{sec:cert}).
+\end{enumerate}
+Part~4 uses a computer. The certificate is a list of nonnegative rational
+multipliers for explicit inequalities; checking it needs only exact
+rational arithmetic. Section~\ref{sec:verify} describes the two checks that
+were done: an exact verifier that is independent of the program that found
+the multipliers, and a Lean~4 formalization of the whole proof in which the
+kernel checks the certificate.
+
+\paragraph{Remark on weaker constants.} With fewer inequalities the same
+method gives weaker constants without a certificate file: Lemma~\ref{lem:J}
+at one radius, Lemma~\ref{lem:P}(b) with a uniform chord bound,
+Lemma~\ref{lem:Apex} at $\lambda = \sqrt3$ and Lemma~\ref{lem:M} combine in
+$15$ explicit rows to $D(P) > (1/3 + 1/60)n$ for $n \ge 10^4$. That
+derivation is not reproduced here.
+
+\section{Notation and the apex identity}\label{sec:setup}
+
+Throughout, $P \subset \R^2$ is a set of $n \ge 2$ points in general
+position, $R$ is the set of distances determined by $P$, and $D = |R|$.
+For $p \in P$ and $r > 0$ let $C(p,r)$ be the circle with centre $p$ and
+radius $r$, and
+\[
+  d_r(p) = |P \cap C(p,r)|, \qquad \operatorname{def}_r(p) = 3 - d_r(p) .
+\]
+Four points of $P$ on $C(p,r)$ would be concyclic, so $d_r(p) \le 3$ and
+$\operatorname{def}_r(p) \ge 0$. Every $q \in P \setminus \{p\}$ lies on
+exactly one circle $C(p,r)$ with $r \in R$, so
+$\sum_{r \in R} d_r(p) = n-1$ and
+\begin{equation}\label{eq:Q}
+  \sum_{r \in R} \operatorname{def}_r(p) \;=\; 3D - n + 1 \;=:\; Q
+  \qquad \text{for every } p \in P .
+\end{equation}
+In particular $Q \ge 0$, which is the bound $D \ge (n-1)/3$.
+
+For distinct $a, b \in P$ let
+$\alpha(a,b) = \#\{z \in P\setminus\{a,b\} : |za| = |zb|\}$, the number of
+apexes of isosceles triangles with base $ab$. The apexes lie on the
+perpendicular bisector $\bis(a,b)$, a line, and no three points of $P$ are
+collinear, so $\alpha(a,b) \le 2$. Let $N = \binom n2$ and let $x_k$ be the
+number of unordered pairs with $\alpha = k$, so $N = x_0 + x_1 + x_2$.
+
+\begin{lemma}[apex identity]\label{lem:apex}
+Let $V = \sum_{p \in P}\sum_{r \in R} v(d_r(p))$ with $v(0) = 3$,
+$v(1) = 1$, $v(2) = v(3) = 0$. Then
+\[
+  \sum_{\{a,b\}} \bigl(2 - \alpha(a,b)\bigr) + V \;=\; nQ ,
+\]
+the sum running over the $N$ unordered pairs. Consequently
+$N - x_2 \le nQ$, and for every set $\Phi$ of ordered pairs of distinct
+points that is closed under $(a,b) \mapsto (b,a)$,
+\begin{equation}\label{eq:B2}
+  \sum_{(a,b) \in \Phi} \bigl(2 - \alpha(a,b)\bigr) \;\le\; 2nQ .
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Counting the triples ($z$, unordered pair $\{a,b\} \subset C(z,r)$) gives
+$\sum_{\{a,b\}} \alpha(a,b) = \sum_{z}\sum_{r\in R}\binom{d_r(z)}{2}$, and
+$2N = \sum_z \sum_{r \in R} d_r(z)$. With \eqref{eq:Q},
+\[
+  nQ - \sum_{\{a,b\}}(2-\alpha) = \sum_z \sum_{r \in R}
+  \Bigl[(3 - d) - d + \tbinom d2\Bigr]_{d = d_r(z)},
+\]
+and $3 - 2d + \binom d2$ equals $3, 1, 0, 0$ for $d = 0, 1, 2, 3$. For the
+consequences: $2 - \alpha \ge 0$ and $V \ge 0$, so
+$N - x_2 = x_0 + x_1 \le 2x_0 + x_1 = \sum (2 - \alpha) \le nQ$; and the
+sum in \eqref{eq:B2} is at most the sum over all ordered pairs, which is
+$2\sum_{\{a,b\}}(2-\alpha) \le 2nQ$.
+\end{proof}
+
+\paragraph{The map $\kappa$.} Let $\cD$ be the set of unordered pairs $f$
+with $\alpha(f) = 2$, so $|\cD| = x_2$. For $f \in \cD$ let $\kappa(f)$ be
+the pair of points of $P$ on $\bis(f)$.
+
+\begin{lemma}\label{lem:kappa}
+$\kappa$ is injective on $\cD$.
+\end{lemma}
+
+\begin{proof}
+Let $f \ne g \in \cD$ with $\kappa(f) = \kappa(g) = \{z, z'\}$, and let
+$\ell$ be the line $zz'$. Then $\bis(f) = \bis(g) = \ell$, so with $\sigma$
+the reflection in $\ell$ we have $f = \{a, \sigma a\}$ and
+$g = \{b, \sigma b\}$. If $f$ and $g$ share a point, then $f = g$; so they
+are disjoint. If $a$ and $b$ lie on one line perpendicular to $\ell$, the
+four points $a, \sigma a, b, \sigma b$ are collinear, which general position
+excludes. Otherwise $\bis(a,b)$ is not parallel to $\ell$ and meets $\ell$
+at a point $c$, and $|ca| = |cb| = |c\sigma a| = |c\sigma b|$: four points
+of $P$ on a circle, which general position also excludes.
+\end{proof}
+
+\section{Normalization into an annulus}\label{sec:annulus}
+
+Translate $P$ so that $\sum_{p} p = 0$ and put $S = \sum_p |p|^2$.
+
+\begin{lemma}\label{lem:rho}
+$\rho_A^2 := \bigl(3\sum_{r \in R} r^2 - S\bigr)/n$ is positive.
+\end{lemma}
+
+\begin{proof}
+Since $\sum_q q = 0$, $\sum_q |p-q|^2 = n|p|^2 + S$ for each $p$, so
+$\sum_{p,q}|p-q|^2 = 2nS$. Also
+$\sum_q |p-q|^2 = \sum_{r\in R} d_r(p) r^2 \le 3\sum_{r\in R} r^2$. Summing
+over $p$ gives $2nS \le 3n\sum_r r^2$, so $3\sum_r r^2 - S \ge S$, and
+$S > 0$ because $P$ has at least two points and centroid $0$.
+\end{proof}
+
+Scale $P$ by $1/\rho_A$. Scaling preserves general position and $D$, and
+after it
+\begin{equation}\tag{N1}
+  3\sum_{r\in R} r^2 = n + S .
+\end{equation}
+For $p \in P$ put $x_p = n^{-1}\sum_{r \in R}\operatorname{def}_r(p)\,r^2
+\ge 0$.
+
+\begin{lemma}\label{lem:annulus}
+(N2) $|p|^2 = 1 - x_p$ for every $p \in P$. (N3) $|p| \le 1$, every
+distance in $P$ is at most $2$, and $R \subset (0,2]$. (N4) If
+$D \le (1/3+\delta)n$, then $x_p \le 12\delta + 4/n$ for every $p$.
+\end{lemma}
+
+\begin{proof}
+(N2): $n|p|^2 + S = \sum_q|p-q|^2 = \sum_r d_r(p) r^2 =
+3\sum_r r^2 - n x_p = n + S - n x_p$ by (N1). (N3) follows from
+$x_p \ge 0$. (N4): by (N3) every $r \in R$ satisfies $r^2 \le 4$, so
+$x_p \le 4Q/n$ by \eqref{eq:Q}, and $Q = 3D - n + 1 \le 3\delta n + 1$.
+\end{proof}
+
+\paragraph{The instance.} From now on assume, for a contradiction, that
+$n \ge n_0 = 10^4$ and $D \le (1/3 + \delta)n$ with $\delta = 1/40$. Put
+$\bar x = 12\delta + 4/n_0 = 3/10 + 4/10^4$ and
+\[
+  \sbar = \frac{41821}{50000}, \qquad
+  \sbar^2 = \frac{1748996041}{2500000000} \le 1 - \bar x , \qquad
+  \omega := 1 - \sbar^2 .
+\]
+By Lemma~\ref{lem:annulus}, every point of $P$ satisfies
+\begin{equation}\label{eq:annulus}
+  \sbar^2 \le |p|^2 \le 1 .
+\end{equation}
+For $p \in P$ put $y_p = |p|^2 - \sbar^2 \in [0,\omega]$ and
+$\ybar = n^{-1}\sum_p y_p$.
+
+\section{The distance profile}\label{sec:profile}
+
+For $\rho \ge 0$ let $N_p(\rho) = \#\{q \in P : |pq| \le \rho\}$ ($p$
+included) and $R(\rho) = \#\{r \in R : r \le \rho\}$. Put
+\[
+  \dd = \frac Dn, \quad \eps = \frac1n, \quad \qq = \frac Qn = 3\dd - 1 + \eps,
+  \quad \cR(\rho) = \frac{R(\rho)}n, \quad
+  \cA(\rho) = \frac1{n^2}\sum_p \bigl(N_p(\rho) - 1\bigr),
+\]
+and $\cX(\rho) = n^{-2}\sum_p\sum_{r\in R,\, r\le\rho}\operatorname{def}_r(p)$.
+So $n^2\cA(\rho)$ is the number of ordered pairs of distinct points at
+distance at most $\rho$, and $\#\{\text{unordered pairs } e : |e| \le \rho\}
+= n^2\cA(\rho)/2$. Since $\sum_{r\le\rho} d_r(p) = N_p(\rho) - 1$, we have
+$\cX = 3\cR - \cA$.
+
+\paragraph{Facts.} (F1) $\cR$, $\cA$ and $\cX$ are nondecreasing,
+$0 \le \cX \le \qq$ and $\cR \le \dd$. (F2) $\cR(2) = \dd$ and
+$\cA(2) = 1 - \eps$, by (N3). (F3) $1/3 - 1/(3n_0) \le \dd \le 1/3 + \delta$
+and $0 < \eps \le 1/n_0$.
+
+\paragraph{Chords.} For $\tau > 0$ and an interval $I$ let $C(I,\tau)$ be
+the statement: for every $p \in P$ and every $r \in R\cap I$ with
+$d_r(p) = 3$, two of the three points of $P$ on $C(p,r)$ are at distance at
+most $\tau$.
+
+\begin{lemma}[same-side chord]\label{lem:C}
+Let $p \in P$, $a = |p|$, $r > 0$,
+$L = (\sbar^2 - a^2 - r^2)/(2ar)$, $w = (1-\sbar^2)/(2ar)$, let $\cl$ be
+the clamp to $[-1,1]$ and $f = \arccos(\cl L) - \arccos(\cl(L+w)) \in
+[0,\pi]$. Then any three points of $P$ on $C(p,r)$ contain two at squared
+distance at most $2r^2(1 - \cos f)$.
+\end{lemma}
+
+\begin{proof}
+Rotate so that $p = (a,0)$ and write $q = p + r(\cos\varphi, \sin\varphi)$.
+Then $|q|^2 = a^2 + r^2 + 2ar\cos\varphi$, so by \eqref{eq:annulus} a point
+$q \in P\cap C(p,r)$ has $\cos\varphi \in [L, L+w]$. Two of three points
+lie in the same closed half $\varphi \in [0,\pi]$ or $\varphi \in
+[\pi,2\pi]$; reflecting both in the first axis if needed (this preserves
+their distance), both lie in $[0,\pi]$. Since $\cos$ is a decreasing
+bijection $[0,\pi] \to [-1,1]$, both angles lie in
+$[\arccos \cl(L+w), \arccos \cl L]$, so they differ by at most $f$, and the
+two points are at distance $2r\sin(|\Delta\varphi|/2) \le 2r\sin(f/2)$.
+\end{proof}
+
+\begin{lemma}[box bound]\label{lem:Cbox}
+Let $\sbar \le a_0 < a_1 \le 1$ and $0 < r_0 < r_1$. Put
+$L_{\mathrm{lo}} = (\sbar^2 - a_1^2 - r_1^2)/(2a_0r_0)$,
+$L_{\mathrm{hi}} = (\sbar^2 - a_0^2 - r_0^2)/(2a_1r_1)$,
+$w_{\mathrm{hi}} = (1-\sbar^2)/(2a_0r_0)$,
+\[
+  \Lambda = \{L_{\mathrm{lo}}, L_{\mathrm{hi}}\} \cup
+  \bigl(\{-1,\, 1 - w_{\mathrm{hi}}\} \cap [L_{\mathrm{lo}}, L_{\mathrm{hi}}]\bigr),
+\]
+and let $\beta \le \min_{L \in \Lambda}\bigl[\cl L\cdot \cl(L+w_{\mathrm{hi}})
++ \sqrt{(1 - (\cl L)^2)(1 - (\cl(L+w_{\mathrm{hi}}))^2)}\bigr]$. Then for every
+$a \in [a_0,a_1]$ and $r \in [r_0, r_1]$ the bound of Lemma~\ref{lem:C} is at
+most $2r_1^2(1-\beta)$. Also, for every $r \in (0, r_1]$, any two points of
+$C(p,r)$ are at squared distance at most $4r_1^2$.
+\end{lemma}
+
+\begin{proof}
+The numerator $\sbar^2 - a^2 - r^2$ is negative and the denominator $2ar$ is
+positive, so $L \in [L_{\mathrm{lo}}, L_{\mathrm{hi}}]$ and
+$w \le w_{\mathrm{hi}}$. For fixed $L$, $f(L,w)$ is nondecreasing in $w$.
+For fixed $w$, $f(\cdot,w)$ is continuous and is: $0$ if $L + w \le -1$;
+increasing when $L < -1 < L + w \le 1$; on $-1 \le L$, $L + w \le 1$ its
+derivative $-1/\sqrt{1-L^2} + 1/\sqrt{1-(L+w)^2}$ is $\le 0$ for
+$L \le -w/2$ and $\ge 0$ for $L \ge -w/2$, so it decreases and then
+increases; decreasing when $-1 \le L \le 1 < L+w$; $0$ if $L > 1$; and
+$\pi$ on $[1-w, -1]$ when $w > 2$. When $w \le 2$ we have
+$-1 \le -w/2 \le 1 - w$, so the only interior local maxima are at $-1$ and
+$1-w$. Hence the maximum of $f(\cdot, w_{\mathrm{hi}})$ on
+$[L_{\mathrm{lo}}, L_{\mathrm{hi}}]$ is attained at a point of $\Lambda$.
+Finally $\cos(\arccos u - \arccos v) = uv + \sqrt{1-u^2}\sqrt{1-v^2}$, so
+$\cos f \ge \beta$ on the box, and $2r^2(1-\cos f) \le 2r_1^2(1-\beta)$.
+The last claim holds because $C(p,r)$ has diameter $2r$.
+\end{proof}
+
+In the certificate, every statement $C(I,\tau)$ that a row needs is proved
+by covering $[\sbar, 1] \times \overline I$ with finitely many boxes, on
+each of which Lemma~\ref{lem:Cbox} gives a bound at most $\tau^2$, with
+square roots rounded so that $\beta$ is a lower bound; a box with $r_0 = 0$
+uses the bound $4r_1^2$. When no such cover exists for an interval, the
+corresponding row is not used.
+
+\section{Pair counts, moments and a cap}\label{sec:rows}
+
+\begin{lemma}[pair counts]\label{lem:P}
+Let $\rho > 0$ and $\rho/2 < r' \le 2$, and assume $C((\rho/2, r'], \rho)$.
+Then
+\begin{align*}
+  &\text{(a)}\quad \cA(\rho) \ge \cA(r') - 2\cR(r'),\\
+  &\text{(b)}\quad \cA(\rho) \ge \cA(\rho/2) + \cA(r') - \cR(\rho/2) - 2\cR(r'),\\
+  &\text{(c)}\quad \cA(\rho) \ge \cA(r') - \cA(\rho/2) - 2\cR(r') + 2\cR(\rho/2).
+\end{align*}
+\end{lemma}
+
+\begin{proof}
+Let $I_p = \sum_{r \in R}\#\{\{q,q'\} \subset P\cap C(p,r) : |qq'| \le \rho\}$.
+An unordered pair $\{q,q'\}$ with $|qq'| \le \rho$ is counted once for each
+apex $p$, that is $\alpha(q,q') \le 2$ times, so
+$\sum_p I_p \le 2\#\{\{q,q'\}: |qq'| \le \rho\} = n^2\cA(\rho)$. A radius
+$r \le \rho/2$ contributes $\binom{d_r(p)}2$ to $I_p$, because all pairs on
+$C(p,r)$ are within $2r \le \rho$. A radius $r \in (\rho/2, r']$ contributes
+at least $[d_r(p) = 3] \ge d_r(p) - 2$, by the hypothesis. For
+$d \in \{0,1,2,3\}$, $\binom d2 \ge d - 2$, $\binom d2 \ge 2d-3$ and
+$\binom d2 \ge 0$. Dropping the radii above $r'$ and using
+$\sum_{r \le y} d_r(p) = N_p(y) - 1$, the three choices give, for each $p$,
+$I_p \ge N_p(r') - 1 - 2R(r')$, $I_p \ge (N_p(\rho/2) - 1) + (N_p(r') - 1) -
+R(\rho/2) - 2R(r')$, and $I_p \ge N_p(r') - N_p(\rho/2) - 2R(r') +
+2R(\rho/2)$. Sum over $p$ and divide by $n^2$.
+\end{proof}
+
+\begin{lemma}[apex range]\label{lem:Apex}
+Let $0 < \lambda < 2$ with $\lambda^2 \ge 4\omega$, put
+$\mathrm{lo}(\lambda) = \sbar^2 + 1 - \sbar\sqrt{4-\lambda^2}$ and
+$\mathrm{hi}(\lambda) = 2 + \sqrt{4 - \lambda^2}$, take
+$0 < w^2 \le \mathrm{lo}(\lambda)$ and $\mathrm{hi}(\lambda) \le h^2 \le 4$,
+and assume $C((w,2],\lambda)$. Then
+\[
+  2\bigl(1-\eps-\cA(\lambda)\bigr) - \tfrac43\bigl(\cA(h) - \cA(w)\bigr)
+  \;\le\; 2\qq .
+\]
+\end{lemma}
+
+\begin{proof}
+(i) Let $z \notin \{a,b\}$ with $|za| = |zb| = r$ and $|ab| > \lambda$. Put
+$u = |a|^2 + |b|^2$ and $\zeta = |z|$. The parallelogram law gives
+$|a+b|^2 = 2u - |ab|^2 < 2u - \lambda^2$, and
+$2r^2 = |z-a|^2 + |z-b|^2 = 2\zeta^2 + u - 2\langle z, a+b\rangle$. Hence
+$\Psi^- < 2r^2 < \Psi^+$ with
+$\Psi^\pm = 2\zeta^2 + u \pm 2\zeta\sqrt{2u - \lambda^2}$. By
+\eqref{eq:annulus}, $\zeta \in [\sbar,1]$ and $u \in [2\sbar^2, 2]$. Then
+$\partial_\zeta \Psi^- \ge 4\sbar - 2\sqrt{4 - \lambda^2} \ge 0$ and, at
+$\zeta = \sbar$, $\partial_u\Psi^- = 1 - 2\sbar/\sqrt{2u-\lambda^2} \le 0$
+for $u \in (\lambda^2/2, 2]$, both because $4\sbar^2 \ge 4 - \lambda^2$;
+the actual $u$ lies in $(\lambda^2/2, 2]$, and $\Psi^-$ is continuous on
+$[\lambda^2/2, 2]$. So
+$\Psi^- \ge \Psi^-(\sbar, 2) = 2\,\mathrm{lo}(\lambda)$, and
+$\Psi^+ \le 4 + 2\sqrt{4-\lambda^2} = 2\,\mathrm{hi}(\lambda)$.
+
+(ii) Let $\Phi$ be the set of ordered pairs $(a,b)$ with $|ab| > \lambda$;
+$|\Phi| = n^2(1 - \eps - \cA(\lambda))$. Each apex $z$ of $(a,b) \in \Phi$
+lies at a distance $r$ from $a$ with $\mathrm{lo} < r^2 < \mathrm{hi}$ by
+(i), so $w < r \le h$. A circle $C(z,r)$ with $d$ points of $P$ carries at
+most $\frac43 d$ ordered pairs of $\Phi$: none for $d \le 1$, two for
+$d = 2$, and for $d = 3$ at most four, because $C((w,2],\lambda)$ gives a
+pair within $\lambda$. Hence $\sum_\Phi \alpha \le \frac43\sum_z\#\{q :
+w < |zq| \le h\} = \frac43 n^2(\cA(h) - \cA(w))$. Insert this into
+\eqref{eq:B2}, $2|\Phi| - \sum_\Phi\alpha \le 2nQ$, and divide by $n^2$.
+\end{proof}
+
+\begin{lemma}[averaged cap]\label{lem:K}
+Let $\rho_e^2 = 2\sbar^2 + 2\sbar$. For $0 < g_1 < \dots < g_m \le \rho_e$,
+$\sum_{i<m} \cA(g_i)(g_{i+1}^2 - g_i^2) \le 2\sbar$.
+\end{lemma}
+
+\begin{proof}
+Fix $z \in P$, $\zeta = |z| \in [\sbar, 1]$, and put
+$F(q) = 1 + \langle q, z/\zeta\rangle$. By (N3), $F \ge 0$ on $P$, and
+$\sum_q F(q) = n$ because the centroid is $0$. Since
+$\langle q, z/\zeta\rangle = (|q|^2 + \zeta^2 - |q-z|^2)/(2\zeta)$,
+\eqref{eq:annulus} gives $F(q) \ge \varphi_\zeta(|q-z|)$ with
+$\varphi_\zeta(t) = 1 + (\sbar^2 + \zeta^2 - t^2)/(2\zeta)$. Its
+derivative in $\zeta$ is $\frac12 - (\sbar^2 - t^2)/(2\zeta^2) \ge 0$
+for $\zeta \ge \sbar$, so $\varphi_\zeta \ge \varphi_{\sbar} =
+(\rho_e^2 - t^2)/(2\sbar)$. Therefore
+$n \ge \sum_q \max(0, \varphi_{\sbar}(|qz|)) =
+\frac1{\sbar}\int_0^{\rho_e} t\,N_z(t)\,dt$. Summing over $z$,
+$\int_0^{\rho_e} t\,(n^2\cA(t) + n)\,dt \le \sbar n^2$, so
+$\int_0^{\rho_e} t\cA(t)\,dt \le \sbar$. Since $\cA$ is nondecreasing, the
+left side of the claim is at most twice this integral.
+\end{proof}
+
+\begin{lemma}[second moment]\label{lem:M}
+$\int_0^2 \rho\,\bigl(\cA(\rho) + 2\cX(\rho)\bigr)\,d\rho = 1 + 4\qq - 2\eps$.
+The integrand is nondecreasing by (F1), so on a partition
+$0 = g_0 < \dots < g_m = 2$ the sum
+$\sum_i \frac12(g_{i+1}^2 - g_i^2)(\cA + 2\cX)(g_i)$ is at most
+$1 + 4\qq - 2\eps$, and the same sum with $(\cA + 2\cX)(g_{i+1})$ is at
+least $1 + 4\qq - 2\eps$.
+\end{lemma}
+
+\begin{proof}
+For each ordered pair $(p,q)$, $p = q$ allowed,
+$2 - |pq|^2/2 = \int_{|pq|}^2 \rho\,d\rho$ by (N3). Summing and dividing by
+$n^2$: the left side becomes $\int_0^2 \rho(\cA + \eps)\,d\rho$, and the
+right side becomes $2 - S/n = 1 + \bar x_{\mathrm{avg}}$ with
+$\bar x_{\mathrm{avg}} = n^{-1}\sum_p x_p$, by $\sum_{p,q}|p-q|^2 = 2nS$ and
+(N2). Finally $\bar x_{\mathrm{avg}} = \int_0^2 \rho^2\,d\cX(\rho) =
+4\cX(2) - 2\int_0^2\rho\cX(\rho)\,d\rho$ with $\cX(2) = \qq$ by (N3) and
+\eqref{eq:Q}.
+\end{proof}
+
+\section{Apex bands}\label{sec:AB}
+
+Fix a rational $\lambda < 2$ such that $C((0,2],\lambda)$ holds. Let $\Phi$
+be the set of ordered pairs with $|ab| > \lambda$ and
+$T = \{(z,a,b) : (a,b) \in \Phi,\ z \notin\{a,b\},\ |za| = |zb|\}$. Fix
+$e_0 < e_1 < \dots < e_m = 2$ with $e_0 \le \lambda/2$, let $T_j$ be the
+triples with $e_j < |za| \le e_{j+1}$, and put $W_j = |T_j|/n^2$,
+$U_j = n^{-2}\sum_{T_j}(y_a + y_b)$, $V_j = n^{-2}\sum_{T_j} y_z$, and for
+$t > 0$, $K^\pm(t) = (4 \pm t)\sbar^2 \pm (4\sbar^2 - \lambda^2)/t$.
+
+\begin{lemma}[apex bands]\label{lem:AB}
+\begin{itemize}
+\item[(AB0)] $\ybar = \omega - 4\qq + 2\int_0^2 \rho\,\cX(\rho)\,d\rho$.
+\item[(AB1)] $\sum_j W_j \ge 2(1 - \eps - \cA(\lambda)) - 2\qq$.
+\item[(AB2)] $W_j \le \frac43\bigl(\cA(e_{j+1}) - \cA(e_j)\bigr)$.
+\item[(AB3)] $(1 + 2/t)U_j + (2+t)V_j \ge (2e_j^2 - K^+(t))W_j$.
+\item[(AB4)] $(2/t - 1)^+U_j + (t-2)^+V_j \ge (K^-(t) - 2e_{j+1}^2)W_j$.
+\item[(AB5)] $\sum_j U_j \le 12\,\ybar\,(\dd - \cR(\lambda))$ and, for
+  every $h \le \lambda/2$, $\sum_j V_j \le 4\,\ybar\,(\dd - \cR(h))$.
+\end{itemize}
+\end{lemma}
+
+\begin{proof}
+Every triple of $T$ has $2|za| \ge |ab| > \lambda$ and $|za| \le 2$, so it
+lies in exactly one band. (AB0): $n^{-1}\sum_p|p|^2 = 1 - \bar
+x_{\mathrm{avg}}$ by (N2), and $\bar x_{\mathrm{avg}} = 4\qq -
+2\int_0^2\rho\cX$ as in the proof of Lemma~\ref{lem:M}. (AB1):
+$|T| = \sum_\Phi\alpha \ge 2|\Phi| - 2nQ$ by \eqref{eq:B2}. (AB2): fix $z$
+and a radius $r$ in the band; $C(z,r)$ carries at most $\frac43 d_r(z)$
+ordered pairs of $\Phi$, as in Lemma~\ref{lem:Apex}(ii), now using
+$C((0,2],\lambda)$; sum over the radii in the band and over $z$.
+
+For (AB3) and (AB4) take $(z,a,b) \in T$, $r = |za|$, $\ell = |ab|$, and
+write $|z|^2 = \sbar^2 + y_z$, $u = |a|^2 + |b|^2 = 2\sbar^2 + Y$ with
+$Y = y_a + y_b$, and $\Theta = 2u - \lambda^2 = 4\sbar^2 - \lambda^2 + 2Y$.
+As in Lemma~\ref{lem:Apex}, $2r^2 = 2|z|^2 + u - 2\langle z, a+b\rangle$ and
+$|a+b|^2 = 2u - \ell^2 < \Theta$, so $\Theta > 0$ and, by
+the Cauchy--Schwarz and AM--GM inequalities,
+$|2\langle z,a+b\rangle| < 2\sqrt{|z|^2 \Theta} \le t|z|^2 + \Theta/t$.
+Hence
+\[
+  K^-(t) + (1 - 2/t)Y + (2-t)y_z \;<\; 2r^2 \;<\; K^+(t) + (1+2/t)Y + (2+t)y_z .
+\]
+On $T_j$, $r > e_j$; summing the right inequality over $T_j$ gives (AB3).
+On $T_j$, $r \le e_{j+1}$, so $(2/t - 1)Y + (t-2)y_z > K^-(t) - 2e_{j+1}^2$;
+replace the coefficients by their positive parts ($Y, y_z \ge 0$) and sum,
+which gives (AB4).
+
+(AB5): $\Phi$ is symmetric, so $\sum_T (y_a + y_b) = 2\sum_{(a,b)\in\Phi}
+\alpha(a,b)\,y_a \le 4\sum_a y_a M_a$ with $M_a = \#\{b : |ab| > \lambda\}
+= \sum_{r > \lambda} d_r(a) \le 3(D - R(\lambda))$. The ordered pairs of
+$\Phi$ with apex $z$ lie on circles $C(z,r)$ with $r > \lambda/2 \ge h$,
+and by the count in (AB2) there are at most $\frac43\sum_{r>h} d_r(z) \le
+4(D - R(h))$ of them. Multiply by $y_z$, sum, and divide by $n^2$.
+\end{proof}
+
+\section{The bisector length gap}\label{sec:J}
+
+The inequalities so far use the apex counts $\alpha$ only. The next lemma
+uses the image $\kappa(\cD)$: on the annulus, the pair of apexes of a long
+pair is either short or long.
+
+\begin{lemma}[bisector length gap]\label{lem:J}
+Let $X \subset \R^2$ be finite, no three points collinear and no four
+concyclic, with $\sbar^2 \le |p|^2 \le 1$ for all $p \in X$, where
+$0 < \sbar < 1$, and let $\omega = 1 - \sbar^2$; define $\cD$, $\kappa$,
+$N$ and $x_2$ for $X$ as in Section~\ref{sec:setup}. Fix $\lambda > 0$ with
+$h_0 := \omega/(2\lambda) < \sbar$ and put
+\[
+  \sigma_0 = \sqrt{1 - h_0^2} - \sqrt{\sbar^2 - h_0^2}, \qquad
+  \Lambda_0 = 2\sqrt{\sbar^2 - h_0^2} .
+\]
+\begin{itemize}
+\item[(i)] If $f \in \cD$ and $|f| \ge \lambda$, then $|\kappa(f)| \le \sigma_0$
+  or $|\kappa(f)| \ge \Lambda_0$.
+\item[(ii)] $\#\{e : \lambda \le |e| < \Lambda_0\} \le \#\{e : |e| \le \sigma_0\}
+  + (N - x_2)$, where $e$ runs over unordered pairs.
+\end{itemize}
+\end{lemma}
+
+(No centroid condition is used; the lemma is applied to $X = P$.)
+
+\begin{proof}
+(i) For $f = \{a,b\}$, $\bis(f) = \{x : 2\langle x, b - a\rangle = |b|^2 -
+|a|^2\}$ lies at distance $h = \bigl||b|^2 - |a|^2\bigr|/(2|ab|) \le
+\omega/(2\lambda) = h_0 < \sbar$ from $0$. Write $\bis(f) = \{c + tu : t \in
+\R\}$ with $c$ the foot of the perpendicular from $0$ and $|u| = 1$, so
+$|c + tu|^2 = h^2 + t^2$. The two points $z = c + tu$, $z' = c + t'u$ of
+$\kappa(f)$ satisfy $\sbar^2 \le h^2 + t^2, h^2 + t'^2 \le 1$, so
+$\sqrt{\sbar^2 - h^2} \le |t|, |t'| \le \sqrt{1-h^2}$; in particular $t$ and
+$t'$ are nonzero. If $tt' > 0$, then $|zz'| = \bigl||t| - |t'|\bigr| \le
+\sigma(h) := \sqrt{1-h^2} - \sqrt{\sbar^2 - h^2}$. If $tt' < 0$, then
+$|zz'| = |t| + |t'| \ge \Lambda(h) := 2\sqrt{\sbar^2 - h^2}$. On $[0,\sbar)$,
+$\sigma'(h) = h\bigl(1/\sqrt{\sbar^2 - h^2} - 1/\sqrt{1 - h^2}\bigr) \ge 0$
+and $\Lambda$ is decreasing, so $\sigma(h) \le \sigma_0$ and
+$\Lambda(h) \ge \Lambda_0$.
+
+(ii) Let $F = \{f \in \cD : |f| \ge \lambda\}$. By (i) and
+Lemma~\ref{lem:kappa}, $|F| \le \#\{|e| \le \sigma_0\} + \#\{|e| \ge
+\Lambda_0\}$. Every pair with $|e| \ge \lambda$ that is not in $F$ is
+outside $\cD$, so $|F| \ge \#\{|e| \ge \lambda\} - (N - x_2)$. Subtracting
+gives (ii). (If $\Lambda_0 \le \lambda$, the left side of (ii) is $0$.)
+\end{proof}
+
+\begin{corollary}[row J]\label{cor:J}
+In the setting of Section~\ref{sec:annulus}, let $\lambda$ be as in
+Lemma~\ref{lem:J}, and let $g_2 < \Lambda_0$ and $g_\sigma \ge \sigma_0$ with
+$g_2 > \lambda$. Then $\cA(g_2) - \cA(\lambda) - \cA(g_\sigma) \le 2\qq$.
+\end{corollary}
+
+\begin{proof}
+$\{\lambda < |e| \le g_2\} \subseteq \{\lambda \le |e| < \Lambda_0\}$ and
+$\{|e| \le \sigma_0\} \subseteq \{|e| \le g_\sigma\}$. Apply
+Lemma~\ref{lem:J}(ii) and $N - x_2 \le nQ$ (Lemma~\ref{lem:apex}), multiply
+by $2/n^2$, and use $\#\{|e|\le\rho\} = n^2\cA(\rho)/2$.
+\end{proof}
+
+\begin{remark}
+Corollary~\ref{cor:J} adds information to the other families. A closely
+related system without it (the same families with $34$ thresholds and a
+slightly different set of (AB5)-type rows, built at $\delta = 1/44$ and at
+$\delta = 177/7832$) has exact rational feasible points, and these points
+violate Corollary~\ref{cor:J} by about $0.2827$ and $0.3045$ (exact
+rational evaluation). At $\delta = 1/40$ the system of
+Section~\ref{sec:cert} without Corollary~\ref{cor:J} is feasible in
+floating-point arithmetic.
+\end{remark}
+
+\section{The certificate}\label{sec:cert}
+
+\paragraph{Grid.} Let $G$ be the set of rationals $b/2^j \ge 1/125$
+($j \ge 0$), where $b$ runs over the $160$ numbers
+$2\cdot 2^{-k/160}$ ($0 \le k < 160$) rounded to six decimals, the number
+$\lceil\sqrt3\cdot 10^6\rceil/10^6$, and $2$. Then $|G| = 1283$.
+
+\paragraph{Variables and box.} The unknowns are $\dd$, $\eps$, $\cR(g)$ and
+$\cA(g)$ for $g \in G$, and the band quantities $W_j, U_j, V_j$ of
+Section~\ref{sec:AB} for $32$ thresholds $\lambda$ (below). The true values
+satisfy the box: (F3), $\cR(g) \in [0, 1/3 + \delta]$, $\cA(g) \in [0,1]$,
+$W_j \in [0,2]$ and $U_j, V_j \in [0,4]$ (since $|T| = \sum_\Phi\alpha \le
+2n^2$, $U_j \le 2\omega W_j$ and $V_j \le \omega W_j$).
+
+\paragraph{Rows.} All rows are linear inequalities in these unknowns whose
+coefficients are explicit rationals; each instance carries its parameters,
+and every side condition is checked in exact arithmetic.
+\begin{enumerate}
+\item (F1), (F2) on $G$: monotonicity of $\cR$, $\cA$ and $\cX = 3\cR -
+  \cA$ between consecutive grid points, $\cX \ge 0$, $\cX \le \qq$,
+  $\cR \le \dd$, $\cR(2) = \dd$, $\cA(2) = 1 - \eps$.
+\item Lemma~\ref{lem:P} (a)--(c) for each $\rho \in G$ for which a grid
+  point $r' > \rho/2$ with $C((\rho/2, r'], \rho)$ is certified by
+  Lemma~\ref{lem:Cbox} ($579$ values of $\rho$; $r'$ is read from the
+  certifier's chord table, and $r' = 2$ when the whole range is
+  certified); (b) and (c) only when $\rho/2 \in G$.
+\item Lemma~\ref{lem:Apex} for every $\lambda \in G$ with
+  $4\omega \le \lambda^2 < 4$, $w$ the largest grid point with $w^2 \le
+  \mathrm{lo}(\lambda)$ (rounded down) and $h$ the smallest grid point with
+  $h^2 \ge \mathrm{hi}(\lambda)$ (rounded up), when $C((w,2],\lambda)$ is
+  certified.
+\item Lemma~\ref{lem:K} on the grid points up to $\rho_e$ (rounded down),
+  and the lower and upper Riemann sums of Lemma~\ref{lem:M} on $G$.
+\end{enumerate}
+These are $9577$ rows. Then:
+\begin{enumerate}\setcounter{enumi}{4}
+\item Lemma~\ref{lem:AB}, (AB1)--(AB4), for $32$ thresholds
+  $\lambda \in G \cap [1, 2\sbar + 1/20)$, each with $C((0,2],\lambda)$
+  certified, chosen greedily upward from $1$ with consecutive thresholds at
+  least $1/50$ apart; band edges $e_0 =$ the largest grid point
+  $\le \lambda/2$ and $e_k =$ the largest grid point
+  $\le \min(e_0 + k/50, 2)$, ending at $2$; and
+  $t \in \{(1/50)(5/4)^k : 0 \le k < 25\}$, a row of (AB3) or (AB4) being
+  used only when its coefficient of $W_j$ is positive. These are $15182$
+  rows. (The certificate file also lists $64$ rows of a weaker form of
+  (AB5) with weight zero.)
+\item Corollary~\ref{cor:J} for every $\lambda \in G$ with $h_0 < \sbar$:
+  $g_2$ is the largest grid point below a rational lower bound of
+  $\Lambda_0$, $g_\sigma$ the smallest grid point at or above a rational
+  upper bound of $\sigma_0$, and $g_2 > \lambda$. These are $515$ rows.
+\end{enumerate}
+
+\paragraph{Case split.} $\ybar \in [0,\omega]$. Split $[0,\omega]$ into the
+$60$ intervals $[Y_k, Y_{k+1}] = \omega\,[k/60, (k+1)/60]$. In case $k$
+($\ybar \in [Y_k, Y_{k+1}]$) add, for each threshold $\lambda$ with
+$h = $ the largest grid point $\le \lambda/2$,
+\[
+  \textstyle\sum_j U_j \le 12\,Y_{k+1}(\dd - \cR(\lambda)), \qquad
+  \sum_j V_j \le 4\,Y_{k+1}(\dd - \cR(h)),
+\]
+which follow from (AB5) and $\dd - \cR \ge 0$, and the two rows
+\[
+  Y_k \le \omega - 4\qq + 2\,\mathrm{Up}, \qquad
+  \omega - 4\qq + 2\,\mathrm{Lo} \le Y_{k+1},
+\]
+where $\mathrm{Up}$ and $\mathrm{Lo}$ are the upper and lower Riemann sums
+of $\int_0^2\rho\cX$ on $G$ ($\mathrm{Up}$ includes the cell $[0,\min G]$
+with the value $\cX(\min G)$, $\mathrm{Lo}$ omits it); they follow from (AB0) because $\cX$ is
+nondecreasing and nonnegative. The variable $\ybar$ itself does not occur.
+
+\paragraph{The Farkas step.} Write the rows of case $k$ as $Av \le b$, where
+$v$ is the vector of true values. For each $k$ the certificate gives
+nonnegative rational multipliers $y$ with
+\[
+  \min_{v \in \text{box}}\; (y^{\mathsf T}A)\,v - y^{\mathsf T}b \;>\; 0 .
+\]
+The minimum of a linear function over a box is computed coordinatewise, in
+exact arithmetic. But the true $v$ lies in the box and satisfies $Av \le b$,
+so $(y^{\mathsf T}A)v \le y^{\mathsf T}b$: a contradiction. Each case uses
+$68$ to $130$ instances of Corollary~\ref{cor:J}, and the $60$ cases use
+$125126$ multiplier rows in all. The smallest gap is in case $30$
+($\ybar \in [0.1502, 0.1552]$):
+\[
+  \frac{42734354885632410509310622714769366500859}
+       {13107200000000000000000000000000000000000000000}
+  \;\approx\; 3.2604\cdot 10^{-6}.
+\]
+Since every case is contradictory and $\ybar$ lies in one of them, the
+assumption $D \le (1/3+1/40)n$ with $n \ge 10^4$ is false. This proves
+Theorem~\ref{thm:main}. \qed
+
+\section{Verification}\label{sec:verify}
+
+\paragraph{Exact verifier.} The multipliers were found by a floating-point
+linear-programming solver and then rounded to rationals; the solver plays no
+part in the proof. A separate verifier, written with the Python standard
+library only and not importing the program that found the multipliers,
+rebuilds every row from its tag, re-checks every side condition (grid
+membership of each parameter, the chord covers of Lemma~\ref{lem:Cbox}, the
+square-root bounds in Lemma~\ref{lem:Apex} and Corollary~\ref{cor:J}, the
+cut of Lemma~\ref{lem:K}, the band edges and the case bounds), and
+evaluates the box minimum in exact rational arithmetic for each of the $60$
+cases. In two independent audits the check rejected mutated row tags and a
+case with the rows of Corollary~\ref{cor:J} removed.
+
+\paragraph{Lean.} The whole proof is formalized in Lean~4 with Mathlib. Each
+row family is a Lean lemma about an arbitrary configuration in general
+position under rational side conditions; a computable row builder maps a
+tag to a rational row, checks the side conditions, and is proved sound. For
+each of the $60$ cases a single theorem checks the weighted combination by
+kernel reduction (\texttt{decide +kernel}), with the multipliers rounded
+to integers at scale $2^{200}$. The final statement,
+\texttt{Esgk.numDistances\_gt\_one\_third\_add\_kappa\_image\_gap}, says
+that for an injective configuration of $n \ge 10000$ points in general
+position, $(1/3 + 1/40)\,n < D$. Its axiom closure consists of the three standard
+axioms \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound};
+the proof uses no \texttt{sorry} and no \texttt{native\_decide}.
+
+\paragraph{Availability.} The certificate, the exact verifier and the Lean
+sources are at
+\url{https://github.com/mysticflounder/distinct-distances-general-position}.
+
+\section{Remarks}
+
+\paragraph{Limits of the method.} With the same row families, the
+floating-point linear program has feasible points at $\delta = 1/39$ for
+$\ybar \in \{0.128, 0.154, 0.180, 0.205\}$. This indicates (floating point
+only; EMPIRICALLY VERIFIED in that sense) that these rows alone do not give
+$\delta = 1/39$ by this kind of certificate. At $\ybar = 0.154$, three
+further families of inequalities (Bochner positivity of the distance
+measure, a lower bound for short pairs from the area of the annulus, and a
+three-point covering inequality) each cut the feasible point found but
+leave the linear program feasible. HEURISTIC: a larger constant needs a
+further inequality of the kind of Lemma~\ref{lem:J}.
+
+\paragraph{Pinned distances.} Theorem~\ref{thm:main} bounds the total number
+of distances. It gives no bound for the number $t(p)$ of distances from a
+single point, and the questions of Erd\H{o}s and Pach whether
+$\max_p t(p) \ge (1/3+\eps)n$ or $\sum_p t(p) \ge (1/3+\eps)n^2$ for sets
+in general position \cite[Problem~2]{EP90}; I am not aware of an answer
+to either. The second question is tied to the number $x_2$ of pairs with
+two apexes. Let $c_k$ be the number of pairs $(p,r)$, $r > 0$, with
+$d_r(p) = k$. As in the proof of Lemma~\ref{lem:apex},
+$2x_0 + x_1 = \sum_{\{a,b\}}(2 - \alpha) =
+\sum_{p,r}(d - \binom d2)_{d = d_r(p)} = c_1 + c_2$, and
+$\sum_p (3t(p) - (n-1)) = \sum_{p,r:\, d_r(p) \ge 1}(3 - d_r(p)) =
+2c_1 + c_2$. Since $x_0 + x_1 \le 2x_0 + x_1 \le 2(x_0 + x_1)$ and
+$c_1 + c_2 \le 2c_1 + c_2 \le 2(c_1 + c_2)$, the quantities $N - x_2$ and
+$\sum_p (3t(p) - (n-1))$ are within a factor $4$ of each other. So a bound
+$x_2 \le (1-c)N$ with $c > 0$ gives a positive answer to the second
+question, and a positive answer gives such a bound. Erd\H{o}s and Purdy
+\cite{EPu76} remark that, for sets in general position, they cannot even
+show that the number of isosceles triangles is $o(n^2)$. The proof above
+uses the common set $R$ of distances through \eqref{eq:Q} and does not
+bound $x_2$.
+
+\appendix
+\section{Status of the ingredients}
+
+\begin{center}
+\small
+\begin{tabular}{lp{5.2cm}p{3.6cm}l}
+\toprule
+Obligation & Statement & Label & Evidence\\
+\midrule
+O1 & Lemma~\ref{lem:apex} (apex identity) & PROVEN (paper, Lean) & \S\ref{sec:setup}\\
+O2 & Lemma~\ref{lem:kappa} ($\kappa$ injective) & PROVEN (paper, Lean) & \S\ref{sec:setup}\\
+O3 & Lemmas~\ref{lem:rho}, \ref{lem:annulus} (annulus) & PROVEN (paper, Lean) & \S\ref{sec:annulus}\\
+O4 & Lemmas~\ref{lem:C}, \ref{lem:Cbox} (chords) & PROVEN (paper, Lean) & \S\ref{sec:profile}\\
+O5 & Lemmas~\ref{lem:P}--\ref{lem:M} & PROVEN (paper, Lean) & \S\ref{sec:rows}\\
+O6 & Lemma~\ref{lem:AB} (apex bands) & PROVEN (paper, Lean) & \S\ref{sec:AB}\\
+O7 & Lemma~\ref{lem:J}, Corollary~\ref{cor:J} & PROVEN (paper, Lean) & \S\ref{sec:J}\\
+O8 & the 60 case certificates & PROVEN (exact check, Lean kernel) & \S\ref{sec:cert}, \S\ref{sec:verify}\\
+O9 & Theorem~\ref{thm:main} & PROVEN (paper, Lean) & \S\ref{sec:verify}\\
+O10 & no certificate at $\delta = 1/39$ from these rows & EMPIRICALLY VERIFIED & floating-point LP only\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{thebibliography}{9}
+\bibitem{BMP05} P.~Brass, W.~Moser, J.~Pach, \emph{Research Problems in
+  Discrete Geometry}, Springer, New York, 2005.
+\bibitem{E75} P.~Erd\H{o}s, On some problems of elementary and combinatorial
+  geometry, \emph{Ann.\ Mat.\ Pura Appl.} (4) \textbf{103} (1975).
+\bibitem{EPu76} P.~Erd\H{o}s, G.~Purdy, Some extremal problems in geometry
+  IV, \emph{Congr.\ Numer.} \textbf{17} (1976).
+\bibitem{EFPR93} P.~Erd\H{o}s, Z.~F\"uredi, J.~Pach, I.~Z.~Ruzsa, The grid
+  revisited, \emph{Discrete Math.} \textbf{111} (1993);
+  doi:10.1016/0012-365X(93)90155-M.
+\bibitem{EP90} P.~Erd\H{o}s, J.~Pach, Variations on the theme of repeated
+  distances, \emph{Combinatorica} \textbf{10} (1990).
+\bibitem{EPweb} T.~F.~Bloom, Erd\H{o}s Problem \#98,
+  \url{https://www.erdosproblems.com/98}, accessed 24 October 2026.
+\bibitem{GK} L.~Guth, N.~H.~Katz, On the Erd\H{o}s distinct distances
+  problem in the plane, \emph{Ann.\ of Math.} (2) \textbf{181} (2015),
+  155--190; arXiv:1011.4105.
+\end{thebibliography}
+
+\end{document}

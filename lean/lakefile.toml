@@ -1,0 +1,26 @@
+name = "Esgk"
+version = "0.1.0"
+keywords = ["math", "discrete-geometry"]
+defaultTargets = ["Esgk"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+relaxedAutoImplicit = false
+
+# The plane geometry primitives (ℝ², InGeneralPosition, distinctDistances)
+# come from lean-formalizations. Both dependencies use the v4.33.1 toolchain
+# and the matching Mathlib release.
+[[require]]
+name = "LeanFormalizations"
+git = "https://github.com/mysticflounder/lean-formalizations.git"
+rev = "dd46c17a2a034d7bfa0df02e7f77834d35592864"
+
+# Keep the direct mathlib requirement last so Lake gives this project's
+# toolchain-aligned pin precedence over transitive package manifests.
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+rev = "v4.33.1"
+
+[[lean_lib]]
+name = "Esgk"
