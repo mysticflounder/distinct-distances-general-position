@@ -31,7 +31,7 @@
 
 \title{Distinct distances in general position:\\
        an explicit improvement of the bound $n/3$}
-\author{Adam McKenna\thanks{\href{mailto:adam-apple@flounder.net}{adam-apple@flounder.net}}}
+\author{Adam McKenna\thanks{\href{mailto:adam@flounder.net}{adam@flounder.net}}}
 \date{October 2026\\[4pt]
       \small DOI: \href{https://doi.org/10.5281/zenodo.23680960}{10.5281/zenodo.23680960}}
 
@@ -89,7 +89,7 @@ We say that $P$ is \emph{in general position} if no three points of $P$
 are collinear and no four points of $P$ are concyclic (on one circle).
 Erd\H{o}s asked whether every set of $n$ points in general position
 determines a number of distinct distances that grows faster than linearly
-in $n$ \cite[question~(9)]{E75}. This is Problem~98 on the Erd\H{o}s
+in $n$ \cite[p.~101, question~(9)]{E75}. This is Problem~98 on the Erd\H{o}s
 problems website \cite{EPweb}, where it is listed as open.
 
 \subsection{The easy bound \texorpdfstring{$n/3$}{n/3}}
@@ -107,8 +107,8 @@ Brass, Moser and Pach record this bound and state that no improvement of
 the form $(1/3+\eps)n$ is known, both for sets with no four points on a
 circle and for sets in general position \cite[\S5.5]{BMP05}. For sets with
 no three points collinear, Erd\H{o}s reports an argument of Szemer\'edi
-that gives a point with more than $\lfloor n/3\rfloor$ distances from it
-\cite{E75}. I am not aware of a bound of the form $(1/3+\eps)n$ for sets
+that gives a point with at least $\lfloor n/3\rfloor$ distances from it
+\cite[p.~101]{E75}. I am not aware of a bound of the form $(1/3+\eps)n$ for sets
 in general position. In the other direction, Brass, Moser and Pach list
 the upper bound $n e^{O(\sqrt{\log n})}$ for such sets, due to Erd\H{o}s,
 F\"uredi, Pach and Ruzsa \cite{EFPR93}. Without the general position
@@ -1112,7 +1112,7 @@ $c_1 + c_2 \le 2c_1 + c_2 \le 2(c_1 + c_2)$, the quantities $N - x_2$ and
 $\sum_p (3t(p) - (n-1))$ are within a factor $4$ of each other. So a bound
 $x_2 \le (1-c)N$ with $c > 0$ gives a positive answer to the second
 question, and a positive answer gives such a bound. Erd\H{o}s and Purdy
-\cite{EPu76} remark that, for sets in general position, they cannot even
+\cite[p.~313]{EPu76} remark that, for sets in general position, they cannot even
 show that the number of isosceles triangles is $o(n^2)$. The proof above
 uses the common set $R$ of distances through \eqref{eq:Q} and does not
 bound $x_2$.
@@ -1177,16 +1177,17 @@ O10 & no certificate at $\delta = 1/39$ from these rows & EMPIRICALLY VERIFIED &
 \bibitem{BMP05} P.~Brass, W.~Moser, J.~Pach, \emph{Research Problems in
   Discrete Geometry}, Springer, New York, 2005.
 \bibitem{E75} P.~Erd\H{o}s, On some problems of elementary and combinatorial
-  geometry, \emph{Ann.\ Mat.\ Pura Appl.} (4) \textbf{103} (1975).
+  geometry, \emph{Ann.\ Mat.\ Pura Appl.} (4) \textbf{103} (1975), 99--108.
 \bibitem{EPu76} P.~Erd\H{o}s, G.~Purdy, Some extremal problems in geometry
-  IV, \emph{Congr.\ Numer.} \textbf{17} (1976).
+  IV, \emph{Congr.\ Numer.} \textbf{17} (1976), 307--322 (Proc.\ 7th
+  Southeastern Conf.\ Combinatorics, Graph Theory and Computing).
 \bibitem{EFPR93} P.~Erd\H{o}s, Z.~F\"uredi, J.~Pach, I.~Z.~Ruzsa, The grid
-  revisited, \emph{Discrete Math.} \textbf{111} (1993);
+  revisited, \emph{Discrete Math.} \textbf{111} (1993), 189--196;
   doi:10.1016/0012-365X(93)90155-M.
 \bibitem{EP90} P.~Erd\H{o}s, J.~Pach, Variations on the theme of repeated
-  distances, \emph{Combinatorica} \textbf{10} (1990).
+  distances, \emph{Combinatorica} \textbf{10} (1990), 261--269.
 \bibitem{EPweb} T.~F.~Bloom, Erd\H{o}s Problem \#98,
-  \url{https://www.erdosproblems.com/98}, accessed 24 October 2026.
+  \url{https://www.erdosproblems.com/98}, accessed 27 October 2026.
 \bibitem{GK} L.~Guth, N.~H.~Katz, On the Erd\H{o}s distinct distances
   problem in the plane, \emph{Ann.\ of Math.} (2) \textbf{181} (2015),
   155--190; arXiv:1011.4105.

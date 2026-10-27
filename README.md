@@ -14,12 +14,11 @@ rational Farkas certificate over 60 cases. An independent exact verifier
 checks the certificate. The Lean 4 kernel checks the complete proof, with the
 certificate.
 
-**Status:** version 1.0.1 (October 2026), not peer reviewed. Archived at
+**Status:** version 1.0.2 (October 2026), not peer reviewed. Archived at
 Zenodo: [doi:10.5281/zenodo.23680960](https://doi.org/10.5281/zenodo.23680960)
-(all versions). The paper is
-written for readers with an undergraduate background and has 11 figures. The
-page ranges in the bibliography are not yet checked against the primary
-sources.
+(all versions). The paper is written for readers with an undergraduate
+background and has 11 figures. Its references were checked against the
+original sources on 26 October 2026.
 
 ## Contents
 
