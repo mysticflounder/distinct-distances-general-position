@@ -4,6 +4,14 @@ title: "Distinct distances in general position: an explicit improvement of the b
 authors:
   - family-names: McKenna
     given-names: Adam
+doi: 10.5281/zenodo.23680960
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23680960
+    description: "All versions (Zenodo concept DOI)"
+  - type: doi
+    value: 10.5281/zenodo.23680961
+    description: "Version 1.0.0"
 repository-code: "https://github.com/mysticflounder/distinct-distances-general-position"
 license: CC-BY-4.0
 keywords:
@@ -19,4 +27,5 @@ preferred-citation:
     - family-names: McKenna
       given-names: Adam
   year: 2026
+  doi: 10.5281/zenodo.23680960
   url: "https://github.com/mysticflounder/distinct-distances-general-position"

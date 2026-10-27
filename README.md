@@ -14,7 +14,9 @@ rational Farkas certificate over 60 cases. An independent exact verifier
 checks the certificate. The Lean 4 kernel checks the complete proof, with the
 certificate.
 
-**Status:** version 1.0.0 (October 2026), not peer reviewed. The paper is
+**Status:** version 1.0.1 (October 2026), not peer reviewed. Archived at
+Zenodo: [doi:10.5281/zenodo.23680960](https://doi.org/10.5281/zenodo.23680960)
+(all versions). The paper is
 written for readers with an undergraduate background and has 11 figures. The
 page ranges in the bibliography are not yet checked against the primary
 sources.
@@ -107,10 +109,15 @@ the reference for the mathematics.
 
 Adam McKenna, *Distinct distances in general position: an explicit
 improvement of the bound n/3*, preprint, October 2026,
+doi:10.5281/zenodo.23680960,
 https://github.com/mysticflounder/distinct-distances-general-position.
+
+The DOI 10.5281/zenodo.23680960 resolves to the latest version. The DOI of
+version 1.0.0 alone is 10.5281/zenodo.23680961.
 
 ## Use of AI
 
-AI agents, among them Claude (Anthropic), developed the arguments, the
+AI agents, among them ChatGPT 6.0 Astra (OpenAI) and Claude (Anthropic),
+developed the arguments, the
 certificate and its verifier, wrote the Lean definitions and proofs, and wrote
 the text with the author, under the direction of the author.
