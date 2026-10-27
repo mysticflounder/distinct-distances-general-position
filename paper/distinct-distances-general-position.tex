@@ -1,6 +1,7 @@
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \hypersetup{hypertexnames=false}
 \usepackage{microtype}
@@ -18,6 +19,7 @@
 \newcommand{\ybar}{\bar{y}}
 \newcommand{\bis}{\operatorname{bis}}
 \newcommand{\cl}{\operatorname{cl}}
+\newcommand{\mavg}{m_{\mathrm{avg}}}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}[theorem]{Lemma}
@@ -36,46 +38,94 @@
 \maketitle
 
 \begin{abstract}
-A planar point set is in general position if no three of its points are
-collinear and no four are concyclic. For such a set of $n$ points, every
-circle centred at a point of the set holds at most three other points, so
-the set determines at least $(n-1)/3$ distinct distances. I prove that every
-such set with $n \ge 10^4$ determines more than $(1/3 + 1/40)\,n$ distinct
-distances. The proof normalizes the set into a thin annulus, derives a
-family of linear inequalities for the distribution of pairwise distances,
-and closes with an exact rational Farkas certificate over $60$ cases. One
-of the inequalities comes from a lemma on the pairs of points that lie
-on a common perpendicular bisector. The certificate has been checked by an
-independent exact verifier, and the complete proof, the certificate
-included, has been checked by the Lean~4 kernel.
+Place $n$ points in the plane so that no three are on a line and no four
+are on a circle. How many different distances must they determine? Every
+circle centred at one of the points can pass through at most three of the
+others, so the $n-1$ other points need at least $(n-1)/3$ circles, and
+there are at least $(n-1)/3$ distinct distances. I prove that every such set with $n \ge 10^4$ points
+determines more than $(1/3 + 1/40)\,n$ distinct distances. The proof first
+shows that a set with few distances must lie in a thin ring (an annulus)
+around its centre of mass. It then derives many linear inequalities that
+the distribution of the pairwise distances must satisfy, and shows that no
+distribution satisfies all of them. The last step is an explicit
+certificate: nonnegative rational weights such that the weighted sum of the inequalities is false for every possible profile. The certificate has been
+checked by an independent exact verifier, and the complete proof, with the
+certificate, has been checked by the Lean~4 proof assistant.
 \end{abstract}
 
 \section{Introduction}
 
-For a finite set $P \subset \R^2$ let $D(P)$ be the number of distinct
-distances $|pq|$, $p \ne q \in P$. We say that $P$ is \emph{in general
-position} if no three points of $P$ are collinear and no four points of $P$
-are concyclic. Erd\H{o}s asked whether every $n$-point set in general
-position determines a number of distinct distances that grows faster than
-linearly in $n$ \cite[question~(9)]{E75}; this is Problem~98 on the
-Erd\H{o}s problems website \cite{EPweb}, where it is listed as open.
+\subsection{The question}
 
-If no four points of $P$ are concyclic, then every circle centred at a point
-$p \in P$ contains at most three points of $P$. The $n-1$ other points of
-$P$ lie on the circles centred at $p$ whose radii are the distances in $P$,
-so $3D(P) \ge n-1$. Brass, Moser and Pach record this bound and state that
-no improvement of the form $(1/3+\eps)n$ is known, both for sets with no
-four points on a circle and for sets in general position
-\cite[\S5.5]{BMP05}. For sets with no three points collinear, Erd\H{o}s
-reports an argument of Szemer\'edi that gives a point with more than
-$\lfloor n/3\rfloor$ distances from it \cite{E75}. I am not aware of a
-bound of the form $(1/3+\eps)n$ for sets in general position. Brass, Moser and Pach
-list the upper bound $n e^{O(\sqrt{\log n})}$ for such sets, due to Erd\H{o}s,
+For a finite set $P$ of points in the plane, let $D(P)$ be the number of
+\emph{distinct} distances between pairs of its points: we list the distance
+$|pq|$ for every pair $p \ne q$ and count how many different values occur.
+A set of $n$ points has $\binom n2$ pairs, so $D(P) \le \binom n2$, and
+for a typical set equality holds. The interesting question goes the other
+way: how \emph{small} can $D(P)$ be? This is the distinct distances problem
+of Erd\H{o}s.
+
+The answer depends on what the set is allowed to look like.
+Figure~\ref{fig:examples} shows three sets of $16$ points. The square grid
+repeats each distance many times and has only $9$ distinct distances. The
+vertices of a regular polygon have only $8$. A set with no special
+structure has $\binom{16}{2} = 120$. Both small examples rely on structure:
+the grid has many points on a common line, and the polygon has all its
+points on a common circle.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_examples.pdf}
+\caption{Three sets of $16$ points and their numbers of distinct distances.
+(a)~The $4 \times 4$ grid has $D = 9$; it contains three points on a line
+(drawn). (b)~The regular $16$-gon has $D = 8$; all its points lie on one
+circle. (c)~$16$ points in general position: no three on a line, no four
+on a circle. Here every distance occurs once, so $D = 120$.}
+\label{fig:examples}
+\end{figure}
+
+We say that $P$ is \emph{in general position} if no three points of $P$
+are collinear and no four points of $P$ are concyclic (on one circle).
+Erd\H{o}s asked whether every set of $n$ points in general position
+determines a number of distinct distances that grows faster than linearly
+in $n$ \cite[question~(9)]{E75}. This is Problem~98 on the Erd\H{o}s
+problems website \cite{EPweb}, where it is listed as open.
+
+\subsection{The easy bound \texorpdfstring{$n/3$}{n/3}}
+
+Fix a point $p \in P$ and draw, for every distance $r$ that occurs in $P$,
+the circle with centre $p$ and radius $r$ (Figure~\ref{fig:circles}).
+Every other point $q$ of $P$ lies on exactly one of these circles, the one
+of radius $|pq|$. If four points of $P$ were on one of these circles, they
+would be concyclic. So each circle holds at most three points of $P$, and
+the $n-1$ other points need at least $(n-1)/3$ circles:
+\[
+  D(P) \;\ge\; \frac{n-1}{3}.
+\]
+Brass, Moser and Pach record this bound and state that no improvement of
+the form $(1/3+\eps)n$ is known, both for sets with no four points on a
+circle and for sets in general position \cite[\S5.5]{BMP05}. For sets with
+no three points collinear, Erd\H{o}s reports an argument of Szemer\'edi
+that gives a point with more than $\lfloor n/3\rfloor$ distances from it
+\cite{E75}. I am not aware of a bound of the form $(1/3+\eps)n$ for sets
+in general position. In the other direction, Brass, Moser and Pach list
+the upper bound $n e^{O(\sqrt{\log n})}$ for such sets, due to Erd\H{o}s,
 F\"uredi, Pach and Ruzsa \cite{EFPR93}. Without the general position
 hypothesis the minimum lies between $cn/\log n$, by the theorem of Guth and
 Katz \cite{GK}, and $Cn/\sqrt{\log n}$, attained by the square lattice.
 
-The target of this paper is the following statement.
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_circles_around_p.pdf}
+\caption{The easy bound. Around a point $p$, every other point lies on a
+circle centred at $p$ whose radius is one of the distances of the set. In
+general position each such circle holds at most three points, so the
+$n - 1$ other points need at least $(n-1)/3$ distances. In this example every drawn circle holds exactly three points, the most that general position
+allows.}
+\label{fig:circles}
+\end{figure}
+
+\subsection{The result}
 
 \begin{theorem}\label{thm:main}
 Let $P \subset \R^2$ be a set of $n \ge 10^4$ points, no three collinear and
@@ -85,44 +135,108 @@ no four concyclic. Then
 \]
 \end{theorem}
 
-The proof is by contradiction: it assumes a set of
-$n \ge 10^4$ points in general position with $D(P) \le (1/3+1/40)n$ and
-derives a contradiction. The constant $1/40$ and the threshold $10^4$ are
-explicit, and both come from the certificate of Section~\ref{sec:cert}.
+The proof is by contradiction: it assumes a set of $n \ge 10^4$ points in
+general position with $D(P) \le (1/3+1/40)n$ and derives a contradiction.
+The constant $1/40$ and the threshold $10^4$ are explicit, and both enter
+through the certificate of Section~\ref{sec:cert}.
 
-\paragraph{Method.} The proof has four parts.
-\begin{enumerate}
-\item A counting identity (Lemma~\ref{lem:apex}) relates the deficit
-  $Q = 3D - n + 1$ to the number of pairs $\{a,b\}$ whose perpendicular
-  bisector contains fewer than two points of $P$.
-\item A normalization (Section~\ref{sec:annulus}): after a translation and a
-  scaling, if $D \le (1/3+\delta)n$ then every point of $P$ lies in the
-  annulus $1 - 12\delta - 4/n \le |p|^2 \le 1$. The width of this annulus
-  is controlled by $Q$.
-\item Linear inequalities for the distance profile (Sections
-  \ref{sec:profile}--\ref{sec:J}): chord bounds for three points on a
-  circle inside the annulus, pair counts, a second-moment identity, a cap
-  bound, apex bands, and a lemma (Lemma~\ref{lem:J}) on the map that
-  sends a pair to the pair of points on its perpendicular bisector.
-\item A linear program on a grid of $1283$ radii, split into $60$ cases by
-  the mean $\ybar$ of $|p|^2 - \sbar^2$, with an exact rational Farkas certificate for
-  each case (Section~\ref{sec:cert}).
-\end{enumerate}
-Part~4 uses a computer. The certificate is a list of nonnegative rational
-multipliers for explicit inequalities; checking it needs only exact
-rational arithmetic. Section~\ref{sec:verify} describes the two checks that
-were done: an exact verifier that is independent of the program that found
-the multipliers, and a Lean~4 formalization of the whole proof in which the
-kernel checks the certificate.
+\subsection{How the proof works}\label{sec:overview}
+
+This section explains the idea of the proof without formulas.
+Figure~\ref{fig:roadmap} shows its structure.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_roadmap.pdf}
+\caption{The structure of the proof. Each box names the section where the
+step is proved.}
+\label{fig:roadmap}
+\end{figure}
+
+\paragraph{Step 1: few distances leave few empty slots.} Think of every
+distance $r$ in the set as providing three ``slots'' on the circle of
+radius $r$ around $p$. The $n-1$ other points fill $n-1$ of the $3D$
+slots, so $Q = 3D - (n-1)$ slots around $p$ stay empty. This number is the
+same for every point $p$. If $D$ is at most $(1/3+\delta)n$, then
+$Q \le 3\delta n + 1$: only a small fraction of the slots are empty. With $\delta = 1/40$, at every point at least about $79\%$ of the $D$ circles hold exactly three points. This is a rigid structure, and the rest of the proof shows that it cannot exist. One consequence (Section~\ref{sec:setup}) concerns isosceles triangles: at least about $85\%$ of the pairs of points $\{a,b\}$ are the base of
+exactly two isosceles triangles whose apex is a point of the set.
+
+\paragraph{Step 2: the set lies in a thin ring.} The sum of the squared
+distances from a point $p$ to the other points measures how far $p$ is from
+the rest of the set. A classical identity (the parallel axis theorem of
+mechanics) says that this sum equals $n|p|^2 + S$, where $|p|$ is the
+distance from $p$ to the centroid (centre of mass) of the set and $S$ does
+not depend on $p$. So points far from the centroid have larger sums. On the
+other hand, if all slots around $p$ are full, the sum is $3\sum_r r^2$,
+summed over all the distances $r$ of the set, which also does not depend on
+$p$. So if there were no empty slots at all, every point would be at the
+same distance from the centroid: the whole set would lie on one circle,
+which general position forbids. With few empty slots, the points are
+nearly at the same distance from the centroid: after scaling, they lie in
+the \emph{annulus}
+\[
+  0.836 \;\le\; |p| \;\le\; 1,
+\]
+a ring of width about $0.16$ around the centroid. Section~\ref{sec:annulus}
+proves this, and Figures~\ref{fig:distance-lists} and~\ref{fig:annulus}
+illustrate it. The annulus is the main tool of the proof: a circle of medium radius around a point of the ring meets the ring in two short arcs, and a line that passes near the centre meets the ring in two short segments. This gives many geometric
+restrictions.
+
+\paragraph{Step 3: inequalities for the distance profile.} The proof does
+not work with individual points. It works with the \emph{distance profile}:
+for each $\rho$ between $0$ and $2$, the fraction $\cA(\rho)$ of pairs of
+points at distance at most $\rho$, and the number of distinct distances at
+most $\rho$. These two functions are like cumulative distribution
+functions. Each geometric fact about the ring gives an inequality between
+values of these functions. Some examples: a full circle of medium radius
+around a point of the ring must contain two close points
+(Section~\ref{sec:profile}); a long pair must have its two apexes at
+distances in a known range (Section~\ref{sec:rows}); and the two apexes of
+a long pair are either very close to each other or very far apart
+(Section~\ref{sec:J}). All these inequalities are linear in the unknown
+values of the profile.
+
+\paragraph{Step 4: no profile satisfies all the inequalities.} We now have
+a system of linear inequalities in finitely many unknowns, and we want to
+show that it has no solution. There is a simple way to prove that a system
+of linear inequalities has no solution: multiply each inequality by a
+nonnegative number and add them up. If the result is a false statement such
+as $0 \le -1$, the system has no solution, because any solution would also
+satisfy the sum. Figure~\ref{fig:farkas} shows a small example. The list of
+multipliers is called a \emph{certificate}. A computer finds the
+multipliers for our system, but the computer is not needed to trust the
+result: once the multipliers are written down, anyone can check them with
+exact arithmetic on fractions. Section~\ref{sec:cert} describes the
+certificate, and Section~\ref{sec:verify} describes two checks of it: an exact verifier that does not use the program that found the multipliers, and a formal proof in the Lean proof assistant.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_farkas.pdf}
+\caption{A certificate in a small example. The three inequalities
+$x \ge 1$, $y \ge 1$ and $x + y \le 1$ have no common solution: the three
+shaded half-planes have no common point. Written as $-x \le -1$,
+$-y \le -1$, $x + y \le 1$ and added with multipliers $1, 1, 1$, they give
+$0 \le -1$. The proof of Theorem~\ref{thm:main} does the same with $8964$
+unknowns, in $60$ cases; the certificate of each case combines between
+$1083$ and $4193$ inequalities.}
+\label{fig:farkas}
+\end{figure}
+
+\paragraph{Reading guide.} Sections~\ref{sec:setup}
+and~\ref{sec:annulus} need only plane geometry and sums.
+Sections~\ref{sec:profile}--\ref{sec:J} derive the inequalities; each
+lemma is preceded by a paragraph that says what it means.
+Section~\ref{sec:cert} assembles the certificate. Appendix~\ref{app:notation}
+lists the notation.
 
 \paragraph{Remark on weaker constants.} With fewer inequalities the same
-method gives weaker constants without a certificate file: Lemma~\ref{lem:J}
-at one radius, Lemma~\ref{lem:P}(b) with a uniform chord bound,
-Lemma~\ref{lem:Apex} at $\lambda = \sqrt3$ and Lemma~\ref{lem:M} combine in
-$15$ explicit rows to $D(P) > (1/3 + 1/60)n$ for $n \ge 10^4$. That
-derivation is not reproduced here.
+method gives weaker constants without a certificate file:
+Lemma~\ref{lem:J} at one radius, Lemma~\ref{lem:P}(b) with a uniform chord
+bound, Lemma~\ref{lem:Apex} at $\lambda = \sqrt3$ and Lemma~\ref{lem:M}
+combine in $15$ explicit inequalities to $D(P) > (1/3 + 1/60)n$ for
+$n \ge 10^4$. That derivation is not reproduced here.
 
-\section{Notation and the apex identity}\label{sec:setup}
+\section{Empty slots and isosceles triangles}\label{sec:setup}
 
 Throughout, $P \subset \R^2$ is a set of $n \ge 2$ points in general
 position, $R$ is the set of distances determined by $P$, and $D = |R|$.
@@ -131,22 +245,52 @@ radius $r$, and
 \[
   d_r(p) = |P \cap C(p,r)|, \qquad \operatorname{def}_r(p) = 3 - d_r(p) .
 \]
-Four points of $P$ on $C(p,r)$ would be concyclic, so $d_r(p) \le 3$ and
-$\operatorname{def}_r(p) \ge 0$. Every $q \in P \setminus \{p\}$ lies on
-exactly one circle $C(p,r)$ with $r \in R$, so
-$\sum_{r \in R} d_r(p) = n-1$ and
+So $d_r(p)$ is the number of points of $P$ at distance exactly $r$ from
+$p$, and $\operatorname{def}_r(p)$ is the number of empty slots on that
+circle. Four points of $P$ on $C(p,r)$ would be concyclic, so
+$d_r(p) \le 3$ and $\operatorname{def}_r(p) \ge 0$. Every
+$q \in P \setminus \{p\}$ lies on exactly one circle $C(p,r)$ with
+$r \in R$, so $\sum_{r \in R} d_r(p) = n-1$ and
 \begin{equation}\label{eq:Q}
   \sum_{r \in R} \operatorname{def}_r(p) \;=\; 3D - n + 1 \;=:\; Q
   \qquad \text{for every } p \in P .
 \end{equation}
-In particular $Q \ge 0$, which is the bound $D \ge (n-1)/3$.
+In particular $Q \ge 0$, which is the bound $D \ge (n-1)/3$. We call $Q$
+the \emph{deficit}. It is the number of empty slots around each point,
+and it is the same for all points.
 
-For distinct $a, b \in P$ let
-$\alpha(a,b) = \#\{z \in P\setminus\{a,b\} : |za| = |zb|\}$, the number of
-apexes of isosceles triangles with base $ab$. The apexes lie on the
-perpendicular bisector $\bis(a,b)$, a line, and no three points of $P$ are
-collinear, so $\alpha(a,b) \le 2$. Let $N = \binom n2$ and let $x_k$ be the
-number of unordered pairs with $\alpha = k$, so $N = x_0 + x_1 + x_2$.
+\paragraph{Isosceles triangles.} For distinct $a, b \in P$ let
+\[
+  \alpha(a,b) = \#\{z \in P\setminus\{a,b\} : |za| = |zb|\},
+\]
+the number of points $z$ of $P$ that are the apex of an isosceles triangle
+with base $ab$. Such apexes lie on the perpendicular bisector
+$\bis(a,b)$, which is a line, and no three points of $P$ are collinear, so
+$\alpha(a,b) \le 2$ (Figure~\ref{fig:isosceles}(a)). Let $N = \binom n2$
+be the number of unordered pairs and let $x_k$ be the number of unordered
+pairs with $\alpha = k$, so $N = x_0 + x_1 + x_2$.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_isosceles.pdf}
+\caption{(a)~The apexes $z, z'$ of the isosceles triangles with base $ab$
+lie on the perpendicular bisector of $ab$. A third apex would put three
+points on one line, so a pair has at most two apexes. (b)~Why two
+different pairs cannot have the same two apexes
+(Lemma~\ref{lem:kappa}). If the pairs $f = \{a, \sigma a\}$ and $g = \{b, \sigma b\}$ both have the apexes $z, z'$, each pair is symmetric about the line $\ell = zz'$,
+and the point $c$ where the bisector of $ab$ meets $\ell$ is equidistant
+from all four points: four points on a circle.}
+\label{fig:isosceles}
+\end{figure}
+
+\paragraph{What the next lemma says.} The total number of ``missing
+apexes'', $\sum (2 - \alpha)$ over all pairs, is at most $n$ times the
+number $Q$ of empty slots per point. When $D \le (1/3+\delta)n$, this says
+that at most about $3\delta n^2$ pairs have fewer than two apexes; with $\delta = 1/40$
+that is at most about $15\%$ of the $N \approx n^2/2$ pairs. The idea of
+the proof: a point $z$ is an apex of the pair $\{a,b\}$ exactly when $a$
+and $b$ lie on a common circle around $z$, and a full circle with three
+points supplies three such pairs.
 
 \begin{lemma}[apex identity]\label{lem:apex}
 Let $V = \sum_{p \in P}\sum_{r \in R} v(d_r(p))$ with $v(0) = 3$,
@@ -163,9 +307,11 @@ points that is closed under $(a,b) \mapsto (b,a)$,
 \end{lemma}
 
 \begin{proof}
-Counting the triples ($z$, unordered pair $\{a,b\} \subset C(z,r)$) gives
-$\sum_{\{a,b\}} \alpha(a,b) = \sum_{z}\sum_{r\in R}\binom{d_r(z)}{2}$, and
-$2N = \sum_z \sum_{r \in R} d_r(z)$. With \eqref{eq:Q},
+Count the pairs (apex $z$, unordered pair $\{a,b\} \subset C(z,r)$): a
+circle $C(z,r)$ with $d$ points gives $\binom d2$ pairs, so
+$\sum_{\{a,b\}} \alpha(a,b) = \sum_{z}\sum_{r\in R}\binom{d_r(z)}{2}$.
+Also $2N = \sum_z \sum_{r \in R} d_r(z)$, because each point $z$ has $n-1$
+partners. With \eqref{eq:Q},
 \[
   nQ - \sum_{\{a,b\}}(2-\alpha) = \sum_z \sum_{r \in R}
   \Bigl[(3 - d) - d + \tbinom d2\Bigr]_{d = d_r(z)},
@@ -179,7 +325,9 @@ $2\sum_{\{a,b\}}(2-\alpha) \le 2nQ$.
 
 \paragraph{The map $\kappa$.} Let $\cD$ be the set of unordered pairs $f$
 with $\alpha(f) = 2$, so $|\cD| = x_2$. For $f \in \cD$ let $\kappa(f)$ be
-the pair of points of $P$ on $\bis(f)$.
+the pair of points of $P$ on $\bis(f)$, that is, the pair of its two
+apexes. The next lemma says that the two apexes determine the pair. It is
+used in Section~\ref{sec:J}.
 
 \begin{lemma}\label{lem:kappa}
 $\kappa$ is injective on $\cD$.
@@ -187,30 +335,75 @@ $\kappa$ is injective on $\cD$.
 
 \begin{proof}
 Let $f \ne g \in \cD$ with $\kappa(f) = \kappa(g) = \{z, z'\}$, and let
-$\ell$ be the line $zz'$. Then $\bis(f) = \bis(g) = \ell$, so with $\sigma$
-the reflection in $\ell$ we have $f = \{a, \sigma a\}$ and
-$g = \{b, \sigma b\}$. If $f$ and $g$ share a point, then $f = g$; so they
-are disjoint. If $a$ and $b$ lie on one line perpendicular to $\ell$, the
-four points $a, \sigma a, b, \sigma b$ are collinear, which general position
-excludes. Otherwise $\bis(a,b)$ is not parallel to $\ell$ and meets $\ell$
-at a point $c$, and $|ca| = |cb| = |c\sigma a| = |c\sigma b|$: four points
-of $P$ on a circle, which general position also excludes.
+$\ell$ be the line $zz'$ (Figure~\ref{fig:isosceles}(b)). Then
+$\bis(f) = \bis(g) = \ell$, so with $\sigma$ the reflection in $\ell$ we
+have $f = \{a, \sigma a\}$ and $g = \{b, \sigma b\}$. If $f$ and $g$ share
+a point, then $f = g$; so they are disjoint. If $a$ and $b$ lie on one
+line perpendicular to $\ell$, the four points $a, \sigma a, b, \sigma b$
+are collinear, which general position excludes. Otherwise $\bis(a,b)$ is
+not parallel to $\ell$ and meets $\ell$ at a point $c$, and
+$|ca| = |cb| = |c\sigma a| = |c\sigma b|$: four points of $P$ on a circle,
+which general position also excludes.
 \end{proof}
 
-\section{Normalization into an annulus}\label{sec:annulus}
+\section{The annulus}\label{sec:annulus}
 
-Translate $P$ so that $\sum_{p} p = 0$ and put $S = \sum_p |p|^2$.
+This section proves Step~2 of the overview: a set with few distinct
+distances lies in a thin ring around its centroid. Everything here uses
+only the two expressions \eqref{eq:parallel} and \eqref{eq:radial} below
+for one sum, and the count \eqref{eq:Q}.
+
+Translate $P$ so that its centroid is the origin, $\sum_{p} p = 0$, and
+put $S = \sum_p |p|^2$. Translation does not change distances, collinearity
+or concyclicity.
+
+\paragraph{Two ways to compute the same sum.} For a point $p$, consider the
+sum $\sum_{q \in P} |p-q|^2$ of the squared distances from $p$ to all
+points of $P$. On one hand, expanding $|p - q|^2 = |p|^2 - 2\langle p, q
+\rangle + |q|^2$ and using $\sum_q q = 0$,
+\begin{equation}\label{eq:parallel}
+  \sum_{q \in P} |p-q|^2 \;=\; n|p|^2 + S .
+\end{equation}
+(This is the parallel axis theorem: the moment of inertia about $p$ is the
+moment about the centroid plus $n$ times the squared distance from the
+centroid.) So the sum grows with the distance $|p|$ from $p$ to the
+centroid. On the other hand, grouping the points $q$ by their distance $r$
+from $p$,
+\begin{equation}\label{eq:radial}
+  \sum_{q \in P} |p-q|^2 \;=\; \sum_{r \in R} d_r(p)\, r^2
+  \;=\; 3\sum_{r \in R} r^2 \;-\; \sum_{r \in R} \operatorname{def}_r(p)\, r^2 .
+\end{equation}
+The first term on the right, $3\sum_r r^2$, is the same for every point
+$p$: it would be the value of the sum if every circle around $p$ were full.
+The second term is the ``missing moment'' of the empty slots at $p$. If
+there were no empty slots, \eqref{eq:parallel} and \eqref{eq:radial} would
+give the same $|p|$ for every $p$, so all points would lie on one circle
+around the centroid. If there are few empty slots, the missing moment is
+small, and all points are \emph{nearly} at the same distance from the
+centroid. Figure~\ref{fig:distance-lists} shows the effect in random
+examples. The lemmas below make this precise.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_distance_lists.pdf}
+\caption{Why the points lie in a ring. (a)~In a set spread over a disk, a
+point near the centre and a point near the edge see very different lists
+of distances (right: histograms of the distances from each of the two
+points to all others). (b)~In a set spread over a ring, two points at the same distance $0.92$ from the centre see nearly the same list. The list of distances from $p$ depends on $|p|$: by \eqref{eq:parallel}, the sum of the squared distances is $n|p|^2 + S$. If $D$ is close to $n/3$, every point uses most distances of the set exactly three times, so all points see nearly the same list, and by \eqref{eq:parallel} and \eqref{eq:radial} they are nearly at the same distance from the centroid. (Random sets with
+$3000$ points; they are illustrations, not sets with few distances.)}
+\label{fig:distance-lists}
+\end{figure}
 
 \begin{lemma}\label{lem:rho}
 $\rho_A^2 := \bigl(3\sum_{r \in R} r^2 - S\bigr)/n$ is positive.
 \end{lemma}
 
 \begin{proof}
-Since $\sum_q q = 0$, $\sum_q |p-q|^2 = n|p|^2 + S$ for each $p$, so
-$\sum_{p,q}|p-q|^2 = 2nS$. Also
-$\sum_q |p-q|^2 = \sum_{r\in R} d_r(p) r^2 \le 3\sum_{r\in R} r^2$. Summing
-over $p$ gives $2nS \le 3n\sum_r r^2$, so $3\sum_r r^2 - S \ge S$, and
-$S > 0$ because $P$ has at least two points and centroid $0$.
+Summing \eqref{eq:parallel} over $p$ gives $\sum_{p,q}|p-q|^2 = 2nS$. By
+\eqref{eq:radial} and $d_r(p) \le 3$,
+$\sum_q |p-q|^2 \le 3\sum_{r\in R} r^2$. Summing over $p$ gives
+$2nS \le 3n\sum_r r^2$, so $3\sum_r r^2 - S \ge S$, and $S > 0$ because
+$P$ has at least two points and centroid $0$.
 \end{proof}
 
 Scale $P$ by $1/\rho_A$. Scaling preserves general position and $D$, and
@@ -218,61 +411,126 @@ after it
 \begin{equation}\tag{N1}
   3\sum_{r\in R} r^2 = n + S .
 \end{equation}
-For $p \in P$ put $x_p = n^{-1}\sum_{r \in R}\operatorname{def}_r(p)\,r^2
-\ge 0$.
+For $p \in P$ put
+\[
+  m_p = \frac1n\sum_{r \in R}\operatorname{def}_r(p)\,r^2 \;\ge\; 0,
+\]
+the missing moment of $p$, divided by $n$.
 
 \begin{lemma}\label{lem:annulus}
-(N2) $|p|^2 = 1 - x_p$ for every $p \in P$. (N3) $|p| \le 1$, every
+(N2) $|p|^2 = 1 - m_p$ for every $p \in P$. (N3) $|p| \le 1$, every
 distance in $P$ is at most $2$, and $R \subset (0,2]$. (N4) If
-$D \le (1/3+\delta)n$, then $x_p \le 12\delta + 4/n$ for every $p$.
+$D \le (1/3+\delta)n$, then $m_p \le 12\delta + 4/n$ for every $p$.
 \end{lemma}
 
 \begin{proof}
-(N2): $n|p|^2 + S = \sum_q|p-q|^2 = \sum_r d_r(p) r^2 =
-3\sum_r r^2 - n x_p = n + S - n x_p$ by (N1). (N3) follows from
-$x_p \ge 0$. (N4): by (N3) every $r \in R$ satisfies $r^2 \le 4$, so
-$x_p \le 4Q/n$ by \eqref{eq:Q}, and $Q = 3D - n + 1 \le 3\delta n + 1$.
+(N2): by \eqref{eq:parallel}, \eqref{eq:radial} and (N1),
+$n|p|^2 + S = 3\sum_r r^2 - n m_p = n + S - n m_p$. (N3) follows from
+$m_p \ge 0$: all points are in the unit disk, so any two are at distance
+at most $2$. (N4): by (N3) every $r \in R$ satisfies $r^2 \le 4$, so
+$m_p \le 4Q/n$ by \eqref{eq:Q}, and $Q = 3D - n + 1 \le 3\delta n + 1$.
 \end{proof}
+
+So after the normalization, the outer boundary of the ring is the unit
+circle, and the depth $m_p$ of a point below the unit circle (measured in
+$|p|^2$) is controlled by its empty slots. A point with all slots full
+would be on the unit circle. The general position hypothesis enters here
+only through $d_r(p) \le 3$.
 
 \paragraph{The instance.} From now on assume, for a contradiction, that
 $n \ge n_0 = 10^4$ and $D \le (1/3 + \delta)n$ with $\delta = 1/40$. Put
-$\bar x = 12\delta + 4/n_0 = 3/10 + 4/10^4$ and
+$\bar m = 12\delta + 4/n_0 = 3/10 + 4/10^4$ and
 \[
-  \sbar = \frac{41821}{50000}, \qquad
-  \sbar^2 = \frac{1748996041}{2500000000} \le 1 - \bar x , \qquad
-  \omega := 1 - \sbar^2 .
+  \sbar = \frac{41821}{50000} = 0.83642, \qquad
+  \sbar^2 = \frac{1748996041}{2500000000} \le 1 - \bar m , \qquad
+  \omega := 1 - \sbar^2 \approx 0.3004 .
 \]
 By Lemma~\ref{lem:annulus}, every point of $P$ satisfies
 \begin{equation}\label{eq:annulus}
   \sbar^2 \le |p|^2 \le 1 .
 \end{equation}
-For $p \in P$ put $y_p = |p|^2 - \sbar^2 \in [0,\omega]$ and
-$\ybar = n^{-1}\sum_p y_p$.
+This is \emph{the annulus}: the ring between the circles of radius
+$\sbar \approx 0.836$ and $1$ around the centroid
+(Figure~\ref{fig:annulus}(a)). The rational number $\sbar$ is chosen
+slightly below $\sqrt{1 - \bar m}$ so that all later computations are with
+exact fractions. For a smaller $\delta$ the ring is thinner
+(Figure~\ref{fig:annulus}(b)).
 
-\section{The distance profile}\label{sec:profile}
+For $p \in P$ put $y_p = |p|^2 - \sbar^2 \in [0,\omega]$, the height of
+$p$ above the inner boundary (measured in $|p|^2$), and let
+$\ybar = n^{-1}\sum_p y_p$ be its average. The final step of the proof
+splits into cases according to the value of $\ybar$.
 
-For $\rho \ge 0$ let $N_p(\rho) = \#\{q \in P : |pq| \le \rho\}$ ($p$
-included) and $R(\rho) = \#\{r \in R : r \le \rho\}$. Put
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_annulus.pdf}
+\caption{(a)~The annulus $\sbar \le |p| \le 1$ with
+$\sbar = 41821/50000 \approx 0.836$, drawn to scale. After the
+normalization of Section~\ref{sec:annulus}, every point of a set in
+general position with $n \ge 10^4$ and $D \le (1/3 + 1/40)n$ lies in it;
+the centroid of the set is at the centre. The dots are an illustration.
+(b)~The inner radius $\sqrt{1 - 12\delta}$ of the ring for a set with
+$D \le (1/3 + \delta)n$ (ignoring the term $4/n$). At $\delta = 1/40$ it is $\sqrt{0.7} \approx 0.837$; the proof uses the slightly smaller rational number $\sbar \approx 0.836$, which also absorbs the term $4/n$. As $\delta \to 0$ the
+ring shrinks to the unit circle, and general position does not allow
+four points on a circle.}
+\label{fig:annulus}
+\end{figure}
+
+\section{The distance profile and short chords}\label{sec:profile}
+
+\paragraph{The unknowns.} For $\rho \ge 0$ let
+$N_p(\rho) = \#\{q \in P : |pq| \le \rho\}$ (with $p$ included) and
+$R(\rho) = \#\{r \in R : r \le \rho\}$. Put
 \[
   \dd = \frac Dn, \quad \eps = \frac1n, \quad \qq = \frac Qn = 3\dd - 1 + \eps,
   \quad \cR(\rho) = \frac{R(\rho)}n, \quad
   \cA(\rho) = \frac1{n^2}\sum_p \bigl(N_p(\rho) - 1\bigr),
 \]
 and $\cX(\rho) = n^{-2}\sum_p\sum_{r\in R,\, r\le\rho}\operatorname{def}_r(p)$.
-So $n^2\cA(\rho)$ is the number of ordered pairs of distinct points at
-distance at most $\rho$, and $\#\{\text{unordered pairs } e : |e| \le \rho\}
-= n^2\cA(\rho)/2$. Since $\sum_{r\le\rho} d_r(p) = N_p(\rho) - 1$, we have
-$\cX = 3\cR - \cA$.
+In words:
+\begin{itemize}
+\item $\cA(\rho)$ is the fraction of ordered pairs at distance at most
+  $\rho$: $n^2\cA(\rho)$ is the number of ordered pairs of distinct points
+  at distance at most $\rho$, and the number of unordered pairs $e$ with
+  $|e| \le \rho$ is $n^2\cA(\rho)/2$. It is a cumulative distribution
+  function of the pair distances, up to the factor $1 - \eps$.
+\item $\cR(\rho)$ is the number of distinct distances up to $\rho$,
+  divided by $n$. So $3\cR(\rho)$ is the number of slots per point on
+  circles of radius at most $\rho$, divided by $n$.
+\item $\cX(\rho)$ is the number of empty slots on circles of radius at most $\rho$, summed over all points and divided by $n^2$. Since
+  $\sum_{r\le\rho} d_r(p) = N_p(\rho) - 1$ (filled slots), we have
+  $\cX = 3\cR - \cA$.
+\item $\dd$, $\eps$ and $\qq$ are the number of distances, $1$ and the
+  deficit, all divided by $n$.
+\end{itemize}
+The proof treats the values of these functions at finitely many radii as
+the unknowns of a linear system. Figure~\ref{fig:profile} in
+Section~\ref{sec:remarks} shows what a solution of that system looks like
+when $\delta$ is slightly larger than $1/40$.
 
 \paragraph{Facts.} (F1) $\cR$, $\cA$ and $\cX$ are nondecreasing,
 $0 \le \cX \le \qq$ and $\cR \le \dd$. (F2) $\cR(2) = \dd$ and
 $\cA(2) = 1 - \eps$, by (N3). (F3) $1/3 - 1/(3n_0) \le \dd \le 1/3 + \delta$
 and $0 < \eps \le 1/n_0$.
 
-\paragraph{Chords.} For $\tau > 0$ and an interval $I$ let $C(I,\tau)$ be
-the statement: for every $p \in P$ and every $r \in R\cap I$ with
-$d_r(p) = 3$, two of the three points of $P$ on $C(p,r)$ are at distance at
-most $\tau$.
+\paragraph{Short chords.} The first geometric consequence of the annulus
+concerns a circle $C(p,r)$ around a point $p$ of the ring. If the radius $r$ is neither very small nor very large, the circle leaves the ring and comes back, and the part of it inside the ring consists of two arcs, mirror images of each other in the line through $0$ and $p$ (Figure~\ref{fig:chord}). (A very small circle can lie entirely inside the ring; then the lemma below gives no useful bound, and the certificate uses the lemma only for radii where it does.) If the circle holds three points of $P$, two of
+them are on the same arc, so they are close to each other. The next lemma computes how close. In it, $\varphi$ is the angle at $p$, measured from the direction that points away from $0$; $L$ and $L + w$ are the values of $\cos\varphi$ at which $C(p,r)$ crosses the inner and the outer boundary circle of the annulus; $\cl$ clamps a number to $[-1,1]$; and $f$ is the angle that one arc spans, seen from $p$.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_chord.pdf}
+\caption{Lemma~\ref{lem:C}. (a)~A circle $C(p,r)$ of medium radius around a point $p$ of the annulus meets the annulus in two arcs (thick), mirror images in the
+line through the centroid $0$ and $p$. Seen from $p$, each arc spans the
+angle $f$. Of three points $q_1, q_2, q_3$ of $P$ on the circle, two lie
+on the same arc. (b)~A zoom on the upper arc: $q_1$ and $q_2$ are joined by
+a short chord. Here $|p| = 0.92$, $r = 0.8$ and $f \approx 13^\circ$.}
+\label{fig:chord}
+\end{figure}
+
+For $\tau > 0$ and an interval $I$ let $C(I,\tau)$ be the statement: for
+every $p \in P$ and every $r \in R\cap I$ with $d_r(p) = 3$, two of the
+three points of $P$ on $C(p,r)$ are at distance at most $\tau$.
 
 \begin{lemma}[same-side chord]\label{lem:C}
 Let $p \in P$, $a = |p|$, $r > 0$,
@@ -293,6 +551,12 @@ bijection $[0,\pi] \to [-1,1]$, both angles lie in
 $[\arccos \cl(L+w), \arccos \cl L]$, so they differ by at most $f$, and the
 two points are at distance $2r\sin(|\Delta\varphi|/2) \le 2r\sin(f/2)$.
 \end{proof}
+
+The bound of Lemma~\ref{lem:C} depends on $a = |p|$ and $r$. A computer
+can only check finitely many cases, so the next lemma gives one bound for
+a whole box of values $a \in [a_0, a_1]$, $r \in [r_0, r_1]$. Covering
+the annulus and a range of radii by finitely many boxes then proves a
+statement $C(I, \tau)$.
 
 \begin{lemma}[box bound]\label{lem:Cbox}
 Let $\sbar \le a_0 < a_1 \le 1$ and $0 < r_0 < r_1$. Put
@@ -328,14 +592,26 @@ $\cos f \ge \beta$ on the box, and $2r^2(1-\cos f) \le 2r_1^2(1-\beta)$.
 The last claim holds because $C(p,r)$ has diameter $2r$.
 \end{proof}
 
-In the certificate, every statement $C(I,\tau)$ that a row needs is proved
-by covering $[\sbar, 1] \times \overline I$ with finitely many boxes, on
-each of which Lemma~\ref{lem:Cbox} gives a bound at most $\tau^2$, with
-square roots rounded so that $\beta$ is a lower bound; a box with $r_0 = 0$
-uses the bound $4r_1^2$. When no such cover exists for an interval, the
-corresponding row is not used.
+In the certificate, every statement $C(I,\tau)$ that an inequality needs
+is proved by covering $[\sbar, 1] \times \overline I$ with finitely many
+boxes, on each of which Lemma~\ref{lem:Cbox} gives a bound at most
+$\tau^2$, with square roots rounded so that $\beta$ is a lower bound; a
+box with $r_0 = 0$ uses the bound $4r_1^2$. When no such cover exists for
+an interval, the corresponding inequality is not used.
 
-\section{Pair counts, moments and a cap}\label{sec:rows}
+\section{Pair counts, apex ranges, a cap and a moment}\label{sec:rows}
+
+This section derives four families of inequalities for the profile.
+
+\paragraph{What the next lemma says.} Count, for each point $p$, the pairs
+$\{q, q'\}$ of points on a common circle around $p$ that are at distance
+at most $\rho$ from each other. A pair is counted once for each of its
+apexes, so at most twice, and the total count is at most twice the number
+of close pairs, which is $n^2\cA(\rho)$. On the other hand, a circle of radius at most $\rho/2$ has
+diameter at most $\rho$, so all of its pairs are close; and a full circle
+of radius in $(\rho/2, r']$ has a close pair by the chord statement.
+Comparing the two counts gives lower bounds for $\cA(\rho)$, the fraction
+of close pairs, in terms of the profile at other radii.
 
 \begin{lemma}[pair counts]\label{lem:P}
 Let $\rho > 0$ and $\rho/2 < r' \le 2$, and assume $C((\rho/2, r'], \rho)$.
@@ -354,14 +630,23 @@ apex $p$, that is $\alpha(q,q') \le 2$ times, so
 $\sum_p I_p \le 2\#\{\{q,q'\}: |qq'| \le \rho\} = n^2\cA(\rho)$. A radius
 $r \le \rho/2$ contributes $\binom{d_r(p)}2$ to $I_p$, because all pairs on
 $C(p,r)$ are within $2r \le \rho$. A radius $r \in (\rho/2, r']$ contributes
-at least $[d_r(p) = 3] \ge d_r(p) - 2$, by the hypothesis. For
+at least $[d_r(p) = 3] \ge d_r(p) - 2$ by the hypothesis, where $[d_r(p) = 3]$ is $1$ if $d_r(p) = 3$ and $0$ otherwise. For
 $d \in \{0,1,2,3\}$, $\binom d2 \ge d - 2$, $\binom d2 \ge 2d-3$ and
 $\binom d2 \ge 0$. Dropping the radii above $r'$ and using
-$\sum_{r \le y} d_r(p) = N_p(y) - 1$, the three choices give, for each $p$,
+$\sum_{r \le y} d_r(p) = N_p(y) - 1$, the three choices, used for the radii $r \le \rho/2$, give in this order, for each $p$,
 $I_p \ge N_p(r') - 1 - 2R(r')$, $I_p \ge (N_p(\rho/2) - 1) + (N_p(r') - 1) -
 R(\rho/2) - 2R(r')$, and $I_p \ge N_p(r') - N_p(\rho/2) - 2R(r') +
 2R(\rho/2)$. Sum over $p$ and divide by $n^2$.
 \end{proof}
+
+\paragraph{What the next lemma says.} Take a long pair $\{a,b\}$, with
+$|ab| > \lambda$, and an apex $z$ of it. All three points lie in the
+annulus, and this restricts the distance $r = |za|$: its square lies
+between two explicit numbers $\mathrm{lo}(\lambda)$ and
+$\mathrm{hi}(\lambda)$. By Lemma~\ref{lem:apex}, most long pairs have two
+apexes. So the set must have many pairs $(z, a)$ with distance in the
+allowed range, and this is a lower bound for the increase of $\cA$ over
+that range.
 
 \begin{lemma}[apex range]\label{lem:Apex}
 Let $0 < \lambda < 2$ with $\lambda^2 \ge 4\omega$, put
@@ -386,7 +671,7 @@ $\Psi^\pm = 2\zeta^2 + u \pm 2\zeta\sqrt{2u - \lambda^2}$. By
 $\partial_\zeta \Psi^- \ge 4\sbar - 2\sqrt{4 - \lambda^2} \ge 0$ and, at
 $\zeta = \sbar$, $\partial_u\Psi^- = 1 - 2\sbar/\sqrt{2u-\lambda^2} \le 0$
 for $u \in (\lambda^2/2, 2]$, both because $4\sbar^2 \ge 4 - \lambda^2$;
-the actual $u$ lies in $(\lambda^2/2, 2]$, and $\Psi^-$ is continuous on
+the actual $u$ lies in $(\lambda^2/2, 2]$ because $0 \le |a+b|^2 < 2u - \lambda^2$, and $\Psi^-$ is continuous on
 $[\lambda^2/2, 2]$. So
 $\Psi^- \ge \Psi^-(\sbar, 2) = 2\,\mathrm{lo}(\lambda)$, and
 $\Psi^+ \le 4 + 2\sqrt{4-\lambda^2} = 2\,\mathrm{hi}(\lambda)$.
@@ -401,6 +686,12 @@ pair within $\lambda$. Hence $\sum_\Phi \alpha \le \frac43\sum_z\#\{q :
 w < |zq| \le h\} = \frac43 n^2(\cA(h) - \cA(w))$. Insert this into
 \eqref{eq:B2}, $2|\Phi| - \sum_\Phi\alpha \le 2nQ$, and divide by $n^2$.
 \end{proof}
+
+\paragraph{What the next lemma says.} The centroid is at the origin, so
+the points cannot all crowd on one side of it. Around each point $z$, a
+weight that is large near $z$ and averages to $1$ over the set then shows
+that not too many points are close to $z$. The result is an upper bound
+for a weighted average of $\cA$ over the radii up to $\rho_e \approx 1.75$.
 
 \begin{lemma}[averaged cap]\label{lem:K}
 Let $\rho_e^2 = 2\sbar^2 + 2\sbar$. For $0 < g_1 < \dots < g_m \le \rho_e$,
@@ -424,6 +715,10 @@ $\int_0^{\rho_e} t\cA(t)\,dt \le \sbar$. Since $\cA$ is nondecreasing, the
 left side of the claim is at most twice this integral.
 \end{proof}
 
+\paragraph{What the next lemma says.} The average of $|pq|^2$ over all ordered pairs $(p,q)$ is $2S/n$ by \eqref{eq:parallel}, and by (N2) $S/n$, the average of $|p|^2$, is $1$ minus the average missing moment. Written in terms of the profile, this gives an exact identity
+between $\cA$, $\cX$ and the deficit $\qq$. Since the profile is only known
+at grid points, the proof uses it as two inequalities (lower and upper Riemann sums). The proof writes the average missing moment as the Stieltjes integral $\int_0^2 \rho^2\,d\cX(\rho)$, which here is the finite sum, over $r \in R$, of $r^2$ times the jump of $\cX$ at $r$, and then integrates by parts.
+
 \begin{lemma}[second moment]\label{lem:M}
 $\int_0^2 \rho\,\bigl(\cA(\rho) + 2\cX(\rho)\bigr)\,d\rho = 1 + 4\qq - 2\eps$.
 The integrand is nondecreasing by (F1), so on a partition
@@ -437,22 +732,32 @@ least $1 + 4\qq - 2\eps$.
 For each ordered pair $(p,q)$, $p = q$ allowed,
 $2 - |pq|^2/2 = \int_{|pq|}^2 \rho\,d\rho$ by (N3). Summing and dividing by
 $n^2$: the left side becomes $\int_0^2 \rho(\cA + \eps)\,d\rho$, and the
-right side becomes $2 - S/n = 1 + \bar x_{\mathrm{avg}}$ with
-$\bar x_{\mathrm{avg}} = n^{-1}\sum_p x_p$, by $\sum_{p,q}|p-q|^2 = 2nS$ and
-(N2). Finally $\bar x_{\mathrm{avg}} = \int_0^2 \rho^2\,d\cX(\rho) =
-4\cX(2) - 2\int_0^2\rho\cX(\rho)\,d\rho$ with $\cX(2) = \qq$ by (N3) and
-\eqref{eq:Q}.
+right side becomes $2 - S/n = 1 + \mavg$ with $\mavg = n^{-1}\sum_p m_p$,
+by $\sum_{p,q}|p-q|^2 = 2nS$ and (N2). Finally
+$\mavg = \int_0^2 \rho^2\,d\cX(\rho) = 4\cX(2) - 2\int_0^2\rho\cX(\rho)\,d\rho$
+with $\cX(2) = \qq$ by (N3) and \eqref{eq:Q}.
 \end{proof}
 
 \section{Apex bands}\label{sec:AB}
 
+\paragraph{What this section does.} Lemma~\ref{lem:Apex} uses the worst
+case over all positions in the annulus. This section keeps more
+information. For an isosceles triangle $(z,a,b)$ with a long base $ab$,
+the geometry of the annulus confines the apex distance $r = |za|$ to a range whose ends move linearly with the heights $y_a + y_b$ and $y_z$ of the three points above the inner boundary. Splitting the
+triangles into bands by the value of $r$ and recording the total heights
+in each band gives linear inequalities whose coefficients involve
+$\ybar$, the average height. Part (AB5) is the only place where $\ybar$
+multiplies an unknown; this is why the final step splits into cases by
+$\ybar$.
+
 Fix a rational $\lambda < 2$ such that $C((0,2],\lambda)$ holds. Let $\Phi$
 be the set of ordered pairs with $|ab| > \lambda$ and
-$T = \{(z,a,b) : (a,b) \in \Phi,\ z \notin\{a,b\},\ |za| = |zb|\}$. Fix
+$T = \{(z,a,b) : (a,b) \in \Phi,\ z \notin\{a,b\},\ |za| = |zb|\}$, the
+isosceles triangles with a long base. Fix
 $e_0 < e_1 < \dots < e_m = 2$ with $e_0 \le \lambda/2$, let $T_j$ be the
-triples with $e_j < |za| \le e_{j+1}$, and put $W_j = |T_j|/n^2$,
+triangles with $e_j < |za| \le e_{j+1}$, and put $W_j = |T_j|/n^2$,
 $U_j = n^{-2}\sum_{T_j}(y_a + y_b)$, $V_j = n^{-2}\sum_{T_j} y_z$, and for
-$t > 0$, $K^\pm(t) = (4 \pm t)\sbar^2 \pm (4\sbar^2 - \lambda^2)/t$.
+$t > 0$, $K^\pm(t) = (4 \pm t)\sbar^2 \pm (4\sbar^2 - \lambda^2)/t$. Here $t > 0$ is a free parameter, $x^+ = \max(x, 0)$, and $W_j$, $U_j$, $V_j$ depend on $\lambda$ and on the band edges.
 
 \begin{lemma}[apex bands]\label{lem:AB}
 \begin{itemize}
@@ -467,14 +772,14 @@ $t > 0$, $K^\pm(t) = (4 \pm t)\sbar^2 \pm (4\sbar^2 - \lambda^2)/t$.
 \end{lemma}
 
 \begin{proof}
-Every triple of $T$ has $2|za| \ge |ab| > \lambda$ and $|za| \le 2$, so it
-lies in exactly one band. (AB0): $n^{-1}\sum_p|p|^2 = 1 - \bar
-x_{\mathrm{avg}}$ by (N2), and $\bar x_{\mathrm{avg}} = 4\qq -
-2\int_0^2\rho\cX$ as in the proof of Lemma~\ref{lem:M}. (AB1):
-$|T| = \sum_\Phi\alpha \ge 2|\Phi| - 2nQ$ by \eqref{eq:B2}. (AB2): fix $z$
-and a radius $r$ in the band; $C(z,r)$ carries at most $\frac43 d_r(z)$
-ordered pairs of $\Phi$, as in Lemma~\ref{lem:Apex}(ii), now using
-$C((0,2],\lambda)$; sum over the radii in the band and over $z$.
+Every triangle of $T$ has $2|za| \ge |ab| > \lambda$ and $|za| \le 2$, so it
+lies in exactly one band. (AB0): $n^{-1}\sum_p|p|^2 = 1 - \mavg$ by (N2),
+and $\mavg = 4\qq - 2\int_0^2\rho\cX$ as in the proof of
+Lemma~\ref{lem:M}. (AB1): $|T| = \sum_\Phi\alpha \ge 2|\Phi| - 2nQ$ by
+\eqref{eq:B2}. (AB2): fix $z$ and a radius $r$ in the band; $C(z,r)$
+carries at most $\frac43 d_r(z)$ ordered pairs of $\Phi$, as in
+Lemma~\ref{lem:Apex}(ii), now using $C((0,2],\lambda)$; sum over the radii
+in the band and over $z$.
 
 For (AB3) and (AB4) take $(z,a,b) \in T$, $r = |za|$, $\ell = |ab|$, and
 write $|z|^2 = \sbar^2 + y_z$, $u = |a|^2 + |b|^2 = 2\sbar^2 + Y$ with
@@ -502,9 +807,33 @@ and by the count in (AB2) there are at most $\frac43\sum_{r>h} d_r(z) \le
 
 \section{The bisector length gap}\label{sec:J}
 
-The inequalities so far use the apex counts $\alpha$ only. The next lemma
-uses the image $\kappa(\cD)$: on the annulus, the pair of apexes of a long
-pair is either short or long.
+The inequalities so far use only the number $\alpha$ of apexes of each
+pair. The next lemma uses where the apexes are.
+
+\paragraph{What the next lemma says.} Take a long pair $f = \{a,b\}$. Both
+endpoints lie in the thin annulus, so they are at nearly the same distance
+from the centroid, and the perpendicular bisector of $ab$ passes close to
+the centroid. A line through (or near) the centre of a ring crosses the
+ring in two short segments on opposite sides of the centre
+(Figure~\ref{fig:bisector}). The two apexes of $f$ are points of $P$, so
+they lie in the ring, on these two segments. Either both are on the same
+segment, and then they are close to each other, or they are on opposite
+segments, and then they are far apart. Medium distances are impossible.
+Since $\kappa$ is injective (Lemma~\ref{lem:kappa}), this gives: the
+number of long pairs with two apexes is at most the number of short pairs
+plus the number of very long pairs.
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_bisector_gap.pdf}
+\caption{Lemma~\ref{lem:J} with $\lambda = 1.2$. The perpendicular
+bisector of a long pair $ab$ passes within $h_0 = \omega/(2\lambda)$ of the
+centroid, and meets the annulus in two segments (thick). The two apexes
+$z, z'$ of $ab$ are points of $P$, so they lie on these segments.
+(a)~On the same segment, $|zz'| \le \sigma_0$. (b)~On opposite segments,
+$|zz'| \ge \Lambda_0$.}
+\label{fig:bisector}
+\end{figure}
 
 \begin{lemma}[bisector length gap]\label{lem:J}
 Let $X \subset \R^2$ be finite, no three points collinear and no four
@@ -548,6 +877,9 @@ outside $\cD$, so $|F| \ge \#\{|e| \ge \lambda\} - (N - x_2)$. Subtracting
 gives (ii). (If $\Lambda_0 \le \lambda$, the left side of (ii) is $0$.)
 \end{proof}
 
+In the language of the profile, Lemma~\ref{lem:J} becomes a linear
+inequality:
+
 \begin{corollary}[row J]\label{cor:J}
 In the setting of Section~\ref{sec:annulus}, let $\lambda$ be as in
 Lemma~\ref{lem:J}, and let $g_2 < \Lambda_0$ and $g_\sigma \ge \sigma_0$ with
@@ -574,6 +906,36 @@ floating-point arithmetic.
 
 \section{The certificate}\label{sec:cert}
 
+This section turns the lemmas into a finite system of linear inequalities
+and explains how its infeasibility is certified.
+
+\paragraph{Certificates of infeasibility.} Suppose a system of linear
+inequalities $Av \le b$ (one inequality per row of the matrix $A$) has a
+solution $v$, and let $y \ge 0$ be a vector of nonnegative multipliers, one
+per row. Multiplying row $i$ by $y_i$ and adding gives
+$(y^{\mathsf T}A)\,v \le y^{\mathsf T} b$. So if we find $y \ge 0$ for
+which this combined inequality fails for every possible $v$, the system has
+no solution. In the example of Figure~\ref{fig:farkas} the combined
+inequality is $0 \le -1$. In our system the unknowns are also known to lie
+in a box (each unknown between known bounds), and it is enough that the
+combined inequality fails for every $v$ in the box. This is easy to check:
+the minimum of a linear function over a box is attained coordinatewise.
+Farkas' lemma says that a certificate exists whenever a system has no
+solution, but the proof below does not use Farkas' lemma: it only uses the
+certificate, and the easy argument above.
+
+\paragraph{Why a grid and why cases.} The profile functions $\cA$ and
+$\cR$ have infinitely many values, but the inequalities only need their
+values at the finitely many radii of a grid $G$; the monotonicity facts
+(F1) connect neighbouring grid points. Most inequalities are linear in
+these values. The exception is (AB5), where the unknown $\ybar$ multiplies
+the unknowns $\dd - \cR(\lambda)$ and $\dd - \cR(h)$. Fixing $\ybar$ to a
+short interval and replacing it by the right endpoint of that interval
+makes (AB5) linear, and (AB0) becomes two linear inequalities that put the
+right side of (AB0) into the interval. So the proof splits the possible
+values of $\ybar$ into $60$ intervals and gives a separate certificate for
+each.
+
 \paragraph{Grid.} Let $G$ be the set of rationals $b/2^j \ge 1/125$
 ($j \ge 0$), where $b$ runs over the $160$ numbers
 $2\cdot 2^{-k/160}$ ($0 \le k < 160$) rounded to six decimals, the number
@@ -587,8 +949,7 @@ $W_j \in [0,2]$ and $U_j, V_j \in [0,4]$ (since $|T| = \sum_\Phi\alpha \le
 2n^2$, $U_j \le 2\omega W_j$ and $V_j \le \omega W_j$).
 
 \paragraph{Rows.} All rows are linear inequalities in these unknowns whose
-coefficients are explicit rationals; each instance carries its parameters,
-and every side condition is checked in exact arithmetic.
+coefficients are explicit rationals; each instance carries its parameters, and every side condition is checked in exact arithmetic. (Each row is stored with a \emph{tag} that names its family and its parameters, for example the radii $\rho$ and $r'$ of Lemma~\ref{lem:P}. Its \emph{side conditions} are the hypotheses of the lemma for these parameters, such as $C((\rho/2, r'], \rho)$. The \emph{chord table} is the list of the statements $C(I, \tau)$ that the box covers of Lemma~\ref{lem:Cbox} prove.)
 \begin{enumerate}
 \item (F1), (F2) on $G$: monotonicity of $\cR$, $\cA$ and $\cX = 3\cR -
   \cA$ between consecutive grid points, $\cX \ge 0$, $\cX \le \qq$,
@@ -639,20 +1000,23 @@ which follow from (AB5) and $\dd - \cR \ge 0$, and the two rows
 \]
 where $\mathrm{Up}$ and $\mathrm{Lo}$ are the upper and lower Riemann sums
 of $\int_0^2\rho\cX$ on $G$ ($\mathrm{Up}$ includes the cell $[0,\min G]$
-with the value $\cX(\min G)$, $\mathrm{Lo}$ omits it); they follow from (AB0) because $\cX$ is
-nondecreasing and nonnegative. The variable $\ybar$ itself does not occur.
+with the value $\cX(\min G)$, $\mathrm{Lo}$ omits it); they follow from
+(AB0) because $\cX$ is nondecreasing and nonnegative. The variable $\ybar$
+itself does not occur.
 
-\paragraph{The Farkas step.} Write the rows of case $k$ as $Av \le b$, where
-$v$ is the vector of true values. For each $k$ the certificate gives
+\paragraph{The certificate step.} Write the rows of case $k$ as $Av \le b$,
+where $v$ is the vector of true values. For each $k$ the certificate gives
 nonnegative rational multipliers $y$ with
 \[
   \min_{v \in \text{box}}\; (y^{\mathsf T}A)\,v - y^{\mathsf T}b \;>\; 0 .
 \]
 The minimum of a linear function over a box is computed coordinatewise, in
 exact arithmetic. But the true $v$ lies in the box and satisfies $Av \le b$,
-so $(y^{\mathsf T}A)v \le y^{\mathsf T}b$: a contradiction. Each case uses
-$68$ to $130$ instances of Corollary~\ref{cor:J}, and the $60$ cases use
-$125126$ multiplier rows in all. The smallest gap is in case $30$
+so $(y^{\mathsf T}A)v \le y^{\mathsf T}b$: a contradiction. We call the
+left side the \emph{gap} of case $k$. Each case uses $68$ to $130$
+instances of Corollary~\ref{cor:J}, and the $60$ cases use $125126$
+multiplier rows in all. Figure~\ref{fig:certificate} shows the gap of
+every case. The smallest gap is in case $30$
 ($\ybar \in [0.1502, 0.1552]$):
 \[
   \frac{42734354885632410509310622714769366500859}
@@ -662,6 +1026,17 @@ $125126$ multiplier rows in all. The smallest gap is in case $30$
 Since every case is contradictory and $\ybar$ lies in one of them, the
 assumption $D \le (1/3+1/40)n$ with $n \ge 10^4$ is false. This proves
 Theorem~\ref{thm:main}. \qed
+
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_certificate.pdf}
+\caption{The $60$ cases of the certificate. Top: the gap of each case
+(log scale), that is, the amount by which the weighted sum of the
+inequalities fails; every gap is positive. The middle cases, near
+$\ybar \approx 0.15$, are the tightest. Bottom: the number of inequalities
+that the certificate of each case combines.}
+\label{fig:certificate}
+\end{figure}
 
 \section{Verification}\label{sec:verify}
 
@@ -694,22 +1069,33 @@ the proof uses no \texttt{sorry} and no \texttt{native\_decide}.
 sources are at
 \url{https://github.com/mysticflounder/distinct-distances-general-position}.
 
-\section{Remarks}
+\section{Remarks}\label{sec:remarks}
 
 \paragraph{Limits of the method.} With the same row families, the
 floating-point linear program has feasible points at $\delta = 1/39$ for
 $\ybar \in \{0.128, 0.154, 0.180, 0.205\}$. This indicates (floating point
 only; EMPIRICALLY VERIFIED in that sense) that these rows alone do not give
-$\delta = 1/39$ by this kind of certificate. At $\ybar = 0.154$, three
-further families of inequalities (Bochner positivity of the distance
-measure, a lower bound for short pairs from the area of the annulus, and a
-three-point covering inequality) each cut the feasible point found but
-leave the linear program feasible. HEURISTIC: a larger constant needs a
-further inequality of the kind of Lemma~\ref{lem:J}.
+$\delta = 1/39$ by this kind of certificate. Figure~\ref{fig:profile} shows
+the feasible point at $\ybar = 0.154$: it is one profile that these inequalities do not exclude at $\delta = 1/39$ (the one that the solver returned; others can exist). Its pair distances concentrate in three narrow
+ranges. At $\ybar = 0.154$, three further families of inequalities
+(Bochner positivity of the distance measure, a lower bound for short pairs
+from the area of the annulus, and a three-point covering inequality) each
+cut the feasible point found but leave the linear program feasible.
+HEURISTIC: a larger constant needs a further inequality of the kind of
+Lemma~\ref{lem:J}.
 
-\paragraph{Pinned distances.} Theorem~\ref{thm:main} bounds the total number
-of distances. It gives no bound for the number $t(p)$ of distances from a
-single point, and the questions of Erd\H{o}s and Pach whether
+\begin{figure}[t]
+\centering
+\includegraphics{figures/fig_profile.pdf}
+\caption{A solution of the linear system at $\delta = 1/39$ and $\ybar = 0.154$, found by a floating-point solver; in floating point, the inequalities of this paper do not exclude it. (a)~The profile
+functions $\cA$, $3\cR$ and $\cX = 3\cR - \cA$. (b)~The distribution of
+the pair distances, as the increase of $\cA$ over bins. It is not known to come from any point set.}
+\label{fig:profile}
+\end{figure}
+
+\paragraph{Pinned distances.} Theorem~\ref{thm:main} bounds the total
+number of distances. It gives no bound for the number $t(p)$ of distances
+from a single point, and the questions of Erd\H{o}s and Pach whether
 $\max_p t(p) \ge (1/3+\eps)n$ or $\sum_p t(p) \ge (1/3+\eps)n^2$ for sets
 in general position \cite[Problem~2]{EP90}; I am not aware of an answer
 to either. The second question is tied to the number $x_2$ of pairs with
@@ -729,6 +1115,39 @@ uses the common set $R$ of distances through \eqref{eq:Q} and does not
 bound $x_2$.
 
 \appendix
+\section{Notation}\label{app:notation}
+
+\begin{center}
+\small
+\begin{tabular}{lp{11.2cm}}
+\toprule
+Symbol & Meaning\\
+\midrule
+$P$, $n$ & the point set and its number of points\\
+$R$, $D$ & the set of distances of $P$ and its size $D = |R|$\\
+$C(p,r)$ & the circle with centre $p$ and radius $r$\\
+$d_r(p)$ & the number of points of $P$ on $C(p,r)$; at most $3$\\
+$\operatorname{def}_r(p)$ & $3 - d_r(p)$, the empty slots on $C(p,r)$\\
+$Q$ & the deficit $3D - n + 1$, the number of empty slots around each point\\
+$\alpha(a,b)$ & the number of apexes $z \in P$ with $|za| = |zb|$; at most $2$\\
+$\bis(a,b)$ & the perpendicular bisector of $a$ and $b$\\
+$N$, $x_k$ & the number $\binom n2$ of unordered pairs, and the number with $\alpha = k$\\
+$\cD$, $\kappa$ & the pairs with two apexes, and the map to their pair of apexes\\
+$S$ & $\sum_p |p|^2$ after the centroid is moved to $0$\\
+$m_p$ & the missing moment $n^{-1}\sum_r \operatorname{def}_r(p)\,r^2$; $|p|^2 = 1 - m_p$\\
+$\sbar$, $\omega$ & the inner radius $41821/50000$ of the annulus and $\omega = 1 - \sbar^2$\\
+$y_p$, $\ybar$ & the height $|p|^2 - \sbar^2 \in [0,\omega]$ and its average over $P$\\
+$\dd$, $\eps$, $\qq$ & $D/n$, $1/n$ and $Q/n$\\
+$\cA(\rho)$ & the number of ordered pairs of distinct points at distance at most $\rho$, divided by $n^2$\\
+$\cR(\rho)$ & the number of distances at most $\rho$, divided by $n$\\
+$\cX(\rho)$ & $3\cR(\rho) - \cA(\rho)$: the empty slots on circles of radius at most $\rho$, summed over all points, divided by $n^2$\\
+$C(I,\tau)$ & for every $p \in P$ and $r \in R \cap I$ with $d_r(p) = 3$, two of the three points on $C(p,r)$ are within $\tau$\\
+$\sigma_0$, $\Lambda_0$ & the bounds for the distance between the two apexes in Lemma~\ref{lem:J}\\
+$G$ & the grid of $1283$ radii used by the certificate\\
+\bottomrule
+\end{tabular}
+\end{center}
+
 \section{Status of the ingredients}
 
 \begin{center}

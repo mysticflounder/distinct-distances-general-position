@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the paper as below."
+title: "Distinct distances in general position: an explicit improvement of the bound n/3"
+authors:
+  - family-names: McKenna
+    given-names: Adam
+repository-code: "https://github.com/mysticflounder/distinct-distances-general-position"
+license: CC-BY-4.0
+keywords:
+  - distinct distances
+  - general position
+  - Erdős problems
+  - Farkas certificate
+  - Lean 4
+preferred-citation:
+  type: article
+  title: "Distinct distances in general position: an explicit improvement of the bound n/3"
+  authors:
+    - family-names: McKenna
+      given-names: Adam
+  year: 2026
+  url: "https://github.com/mysticflounder/distinct-distances-general-position"

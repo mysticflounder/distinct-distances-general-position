@@ -14,18 +14,37 @@ rational Farkas certificate over 60 cases. An independent exact verifier
 checks the certificate. The Lean 4 kernel checks the complete proof, with the
 certificate.
 
-**Status:** initial draft of the paper (October 2026). The page ranges in the
-bibliography are not yet checked against the primary sources.
+**Status:** version 1.0.0 (October 2026), not peer reviewed. The paper is
+written for readers with an undergraduate background and has 11 figures. The
+page ranges in the bibliography are not yet checked against the primary
+sources.
 
 ## Contents
 
 | Path | Contents |
 |---|---|
-| `paper/distinct-distances-general-position.tex` | the paper (LaTeX) |
+| `paper/distinct-distances-general-position.pdf` | the paper (21 pages) |
+| `paper/distinct-distances-general-position.tex` | its LaTeX source |
+| `paper/figures/` | the 11 figures (PDF), the programs that draw them (`src/`), their data (`data/`) and `build.sh` |
 | `certificate/constant-gain-1-40-K160-c60.json.gz` | the certificate: 60 cases, rational multipliers |
 | `verifier/verify_constant_gain_1_40.py` | exact verifier (Python standard library only) |
 | `verifier/verify_constant_gain_5_239.py` | chord evaluator that the verifier imports |
 | `lean/` | Lean 4 proof of the theorem |
+
+## Build the paper
+
+```sh
+cd paper
+latexmk -pdf distinct-distances-general-position.tex
+```
+
+To redraw the figures, run `paper/figures/build.sh`. It needs
+[uv](https://docs.astral.sh/uv/) (Python with matplotlib and numpy runs in a
+throwaway environment) and a TeX installation with `latexmk`. The option
+`--refresh-data` first rebuilds `data/certificate_cases.json` from a verifier
+run. `data/profile_1_39.json` is a solution of the linear system at
+δ = 1/39 and ȳ = 0.154 that a floating-point solver found (the last figure
+of the paper). The solver is not part of this repository.
 
 ## Check the certificate
 
@@ -78,13 +97,20 @@ the reference for the mathematics.
 
 ## License
 
-- The paper text (`paper/`) is licensed under
-  [CC BY 4.0](paper/LICENSE).
-- The verifier, the certificate and the Lean sources are licensed under the
-  [Apache License 2.0](LICENSE).
+- The paper text and the figures (`paper/`, except the programs and data in
+  `paper/figures/src/`, `paper/figures/data/` and `paper/figures/build.sh`)
+  are licensed under [CC BY 4.0](paper/LICENSE).
+- The verifier, the certificate, the Lean sources and the figure programs and
+  data are licensed under the [Apache License 2.0](LICENSE).
 
 ## Citation
 
 Adam McKenna, *Distinct distances in general position: an explicit
-improvement of the bound n/3*, draft, October 2026,
+improvement of the bound n/3*, preprint, October 2026,
 https://github.com/mysticflounder/distinct-distances-general-position.
+
+## Use of AI
+
+AI agents, among them Claude (Anthropic), developed the arguments, the
+certificate and its verifier, wrote the Lean definitions and proofs, and wrote
+the text with the author, under the direction of the author.
